@@ -8,6 +8,5 @@ interface IMembers {
     function requiredQuorum() external returns (uint256);
     function enterpriseMatch() external returns (uint256);
     function amountTokensPerValidation() external returns (uint256);
-    // function UserType(uint256 type) external returns 
 
 }
