@@ -1,0 +1,2 @@
+- Make sure to copy the pacioliClient sub-project from the latest at https://github.com/Auditchain/Reporting-Validation-Engine/tree/main/clientExamples/pacioliClient
+- The Pacioli node helper (file providerManger.js) is at https://github.com/Auditchain/Pacioli-Node-Helper
