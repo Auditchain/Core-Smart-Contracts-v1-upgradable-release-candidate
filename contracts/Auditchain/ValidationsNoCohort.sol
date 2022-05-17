@@ -61,7 +61,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
-                          uint256 quorum, uint256 timeExecuted, string url, address[] winner);
+                          uint256 quorum, uint256 timeExecuted, string url, address[] winners);
 
     event PaymentProcessed(bytes32 validationHash, address winner, uint256 pointsPlus, uint256 pointsMinus);
     event WinnerVoted(address validator, address winner, bool isValid);
