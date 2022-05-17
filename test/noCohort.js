@@ -274,6 +274,7 @@ contract("NoCohort Validations contract", (accounts) => {
             let event = result.logs[1];
             assert.equal(event.event, 'RequestExecuted');
 
+
             validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator1 });
             validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator2 });
             validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator3 });
@@ -289,7 +290,6 @@ contract("NoCohort Validations contract", (accounts) => {
             let earned3 = BN(depositAmountAfter3.toString()).minus(BN(depositAmountBefore3.toString()));
             let earned4 = BN(depositAmountAfter4.toString()).minus(BN(depositAmountBefore4.toString()));
 
-            // let fee = await ;
             let total = BN(earned1.toString()).add(BN(earned2.toString()).add(BN(earned3.toString()).add(BN(earned4.toString()))));
             assert.strictEqual(total.toString(), price.toString());
 
