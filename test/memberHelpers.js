@@ -1,8 +1,6 @@
 import { assert } from 'chai';
-import { en } from 'ethers/wordlists';
 import {
     ensureException,
-    duration
 } from './helpers/utils.js';
 
 const MEMBERS = artifacts.require('../Members');
@@ -13,18 +11,7 @@ const NODE_OPERATIONS = artifacts.require('../NodeOperations');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
-
-
-
-
-
-
-var BigNumber = require('big-number');
-let SETTER_ROLE = web3.utils.keccak256("SETTER_ROLE");
 import expectRevert from './helpers/expectRevert';
-
-
-
 
 contract("Member Helper contract", (accounts) => {
 
@@ -32,11 +19,6 @@ contract("Member Helper contract", (accounts) => {
     const enterprise1 = accounts[1];
     const validator1 = accounts[3];
     const validator2 = accounts[4];
-    const validator3 = accounts[5];
-    const dataSubscriber = accounts[6];
-    const platformAccount = accounts[7];
-    const validator4 = accounts[8];
-
 
     let members;
     let token;
@@ -49,21 +31,11 @@ contract("Member Helper contract", (accounts) => {
 
     let auditTokenMin = "5000000000000000000000";
     let auditTokenLesMin = "1";
-    let auditTokenMorMax = "25100000000000000000000";
-    let auditTokenMax = "25000000000000000000000";
     let initialToken = "2500000000000000000000000000";
-    let documentHash;
-    const documentURL = "http://xbrlsite.azurewebsites.net/2021/reporting-scheme/proof/reference-implementation/instance.xml";
-    let price = "1000000000000000000";
 
-
-
-
-    let rewardTokens = "1000000000000000000";
     let tokenPerValidation;
     CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
     let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE");
-
 
     before(async () => {
 
@@ -85,9 +57,7 @@ contract("Member Helper contract", (accounts) => {
         await token.mint(admin, initialToken, { from: admin });
         await queue.grantRole(CONTROLLER_ROLE, validation.address, { from: admin });
 
-
     })
-
 
     describe("Deploy", async () => {
 
@@ -135,9 +105,7 @@ contract("Member Helper contract", (accounts) => {
 
         before(async () => {
 
-            // await members.addValidatorUser(validator1, "Validators 1", { from: admin });
-            const result = await members.addUser(validator1, "Validator 1", 1, { from: admin });
-
+            await members.addUser(validator1, "Validator 1", 1, { from: admin });
             await token.transfer(validator1, auditTokenMin, { from: admin });
             await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
         })
@@ -165,30 +133,13 @@ contract("Member Helper contract", (accounts) => {
         it("Should fail. User contributed less than required amount.", async () => {
 
             try {
-                let result = await memberHelpers.stake(auditTokenLesMin, { from: validator1 });
+                await memberHelpers.stake(auditTokenLesMin, { from: validator1 });
                 expectRevert()
             } catch (error) {
                 ensureException(error);
             }
 
         })
-
-        // it("Should fail. User contributed more than required amount.", async () => {
-
-        //     await members.addUser(validator2, "Validator 2", 1, { from: admin });
-        //     await token.transfer(validator2, auditTokenMorMax, { from: admin });
-        //     await token.approve(memberHelpers.address, auditTokenMorMax, { from: validator2 });
-
-        //     try {
-        //         let result = await memberHelpers.stake(auditTokenMorMax, { from: validator2 });
-        //         expectRevert()
-
-        //     } catch (error) {
-        //         ensureException(error);
-        //     }
-
-        // })
-
     })
 
     describe("Deposit by Enterprise", async () => {
@@ -196,7 +147,6 @@ contract("Member Helper contract", (accounts) => {
         before(async () => {
 
             await members.addUser(enterprise1, "Enterprise 1", 0, { from: admin });
-
             await token.transfer(enterprise1, auditTokenMin, { from: admin });
             await token.approve(memberHelpers.address, auditTokenMin, { from: enterprise1 });
         })

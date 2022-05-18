@@ -1,9 +1,5 @@
 import { assert } from 'chai';
-import { en } from 'ethers/wordlists';
-import {
-    ensureException,
-    duration
-} from './helpers/utils.js';
+
 
 
 const MEMBERS = artifacts.require('../Members');
@@ -14,58 +10,25 @@ const VALIDATION = artifacts.require('../ValidationsNoCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
-
-
-// import expectRevert from './helpers/expectRevert';
 let BN = require("big-number");
-
-
-
 
 contract("Queue", (accounts) => {
 
     const admin = accounts[0];
-    const enterprise1 = accounts[1];
-    const validator1 = accounts[2];
-    const validator2 = accounts[3];
-    const validator3 = accounts[4];
-    const validator4 = accounts[5];
-    const platformAccount = accounts[6];
-    const dataSubscriber = accounts[7];
-    const documentURL = "http://xbrlsite.azurewebsites.net/2021/reporting-scheme/proof/reference-implementation/instance.xml"
-
 
     let members;
     let token;
-    let memberHelpers;
     let nodeOperations
     let validationHelpers;
     let validation;
-    let documentHash;
-    let validationHash;
     let queue;
+    let memberHelpers;
 
     let auditTokenPrice = "5000000000000000000000";
     let auditTokenHalf = "2500000000000000000000";
     let trxHash = "0x44bd3e22479f8fab2aa3e9d55617f012a4cb13beb0bca204a070f41b04a4cdc5";
     let trxHash2 = "0x72bb7d6665d72c32432d2accd4f1f8391a548575d211e78c0615b2e3aaeb3cfb";
     let zeroTransaction = "0x0000000000000000000000000000000000000000000000000000000000000000";
-
-
-
-    let cohortAddress;
-    let cohortContract;
-    let result;
-
-    let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
-
-
-
-    const tokenAmount1 = "9000000000000000000000000";
-    const tokenAmount2 = "8500000000000000000000000";
-    const tokenAmount3 = "10000000000000000000000000";
-    const tokenAmount4 = "44443332220000000000000000";
-    const tokenAmount5 = "14443332220000000000000000";
 
 
     before(async () => {
@@ -80,7 +43,6 @@ contract("Queue", (accounts) => {
 
         let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
         await queue.grantRole(CONTROLLER_ROLE, admin, { from: admin });
-
 
     })
 
@@ -102,7 +64,6 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. Add new element to queue", async () => {
 
-
             let queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "0");
 
@@ -110,13 +71,10 @@ contract("Queue", (accounts) => {
             queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "1");
 
-
         })
 
         it("Should succeed. Remove first element from queue", async () => {
 
-
-            // await queue.addToQueue(auditTokenPrice, trxHash);
             let queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "1");
 
@@ -181,9 +139,7 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. Setting validation flag", async () => {
 
-
             await queue.addToQueue(auditTokenPrice, trxHash);
-
             let id = await queue.findIdForValidationHash(trxHash);
             let object = await queue.get(id.toString());
             assert.strictEqual(object.executed, false);
@@ -194,13 +150,10 @@ contract("Queue", (accounts) => {
             object = await queue.get(id.toString());
             assert.strictEqual(object.executed, true);
             await queue.removeFromQueue(trxHash);
-
-
         })
 
 
         it("Should succeed. It gets next record for validation", async () => {
-
 
             await queue.addToQueue(auditTokenPrice, trxHash);
             await queue.addToQueue(auditTokenHalf, trxHash2);
@@ -236,27 +189,20 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets empty validation hash for validation after one provided if none exists", async () => {
 
-
             await queue.addToQueue(auditTokenPrice, trxHash);
-            // await queue.addToQueue(auditTokenHalf, trxHash2);
-
             let nextValidation = await queue.getNextValidation();
             assert.strictEqual(nextValidation, trxHash);
             nextValidation = await queue.getValidationToProcess(trxHash);
 
             assert.strictEqual(nextValidation, zeroTransaction);
             await queue.removeFromQueue(trxHash);
-
-
         })
 
 
         it("Should succeed. It gets next record for vote", async () => {
 
-
             await queue.addToQueue(auditTokenPrice, trxHash);
             await queue.addToQueue(auditTokenHalf, trxHash2);
-
             await queue.setValidatedFlag(trxHash);
 
             let nextValidation = await queue.getNextValidationToVote();
@@ -269,13 +215,10 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets next record for validation after one provided if there is none in the queue", async () => {
 
-
             await queue.addToQueue(auditTokenPrice, trxHash);
             await queue.addToQueue(auditTokenHalf, trxHash2);
-
             await queue.setValidatedFlag(trxHash);
             await queue.setValidatedFlag(trxHash2);
-
 
             let validationToVote = await queue.getNextValidationToVote();
             let nextValidationToVote = await queue.getValidationToVote(validationToVote);
@@ -284,15 +227,12 @@ contract("Queue", (accounts) => {
             await queue.removeFromQueue(trxHash);
             await queue.removeFromQueue(trxHash2);
 
-
         })
 
         it("Should succeed. It gets empty validation hash record for validation after one provided if there is none in the queue", async () => {
 
-
             await queue.addToQueue(auditTokenPrice, trxHash);
             await queue.addToQueue(auditTokenHalf, trxHash2);
-
             await queue.setValidatedFlag(trxHash);
 
             let validationToVote = await queue.getNextValidationToVote();
@@ -320,13 +260,6 @@ contract("Queue", (accounts) => {
             assert.strictEqual(object.price.toString(), auditTokenHalf);
             await queue.removeFromQueue(trxHash);
 
-
         })
-
     })
-
-
-   
-
-
 })

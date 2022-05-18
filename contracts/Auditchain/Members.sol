@@ -7,8 +7,7 @@ import "./../IAuditToken.sol";
 
 /**
  * @title Members
- * Allows on creation of Enterprise and Validator accounts and staking of funds by validators
- * Validators and enterprises have ability to withdraw their staking and earnings 
+ * Allows on creation of Enterprise and Validator accounts.
  * Contract also contains several update functions controlled by the Governance contracts
  */
 
@@ -106,6 +105,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         emit LogGovernanceUpdate(_newFee, "updatePlatformShareValidation");
     }
 
+
     /**
     * @dev to be called by Governance contract to update new value for data subscriber access fee
     * @param _accessFee new value for data subscriber access fee
@@ -116,6 +116,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         accessFee = _accessFee;
         emit LogGovernanceUpdate(_accessFee, "updateAccessFee");
     }
+
 
      /**
     * @dev to be called by Governance contract to update new amount for validation rewards
@@ -128,6 +129,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         emit LogGovernanceUpdate(_minDepositDays, "updateMinDepositDays");
     }
 
+
     /**
     * @dev to be called by Governance contract to update new amount for validation rewards
     * @param _amountTokensPerValidation new value of reward per validation
@@ -139,6 +141,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         emit LogGovernanceUpdate(_amountTokensPerValidation, "updateRewards");
 
     }
+
     
     /**
     * @dev to be called by Governance contract
@@ -151,6 +154,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         emit LogGovernanceUpdate(_enterpriseMatch, "updateEnterpriseMatch");
 
     }
+    
 
     /**
     * @dev to be called by Governance contract to change enterprise and validators shares

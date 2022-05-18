@@ -1,45 +1,30 @@
 import { assert } from 'chai';
-import { en } from 'ethers/wordlists';
 import {
     ensureException,
-    duration
 } from './helpers/utils.js';
 
 const MEMBERS = artifacts.require('../Members');
 const TOKEN = artifacts.require('../AuditToken');
 
-var BigNumber = require('big-number');
 let SETTER_ROLE = web3.utils.keccak256("SETTER_ROLE");
-
-
 
 contract("Member contract", (accounts) => {
 
     const admin = accounts[0];
     const platformAccount = accounts[1];
     const validator1 = accounts[2];
-    const validator2 = accounts[3];
-    const validator3 = accounts[4];
-    const dataSubscriber = accounts[5];
     const enterprise1 = accounts[6];
-    const validator4 = accounts[7];
-
 
     let members;
     let token;
     let CONTROLLER_ROLE;
 
     let auditTokenMin = "5000000000000000000000";
-    let auditTokenLesMin = "1";
-    let auditTokenMorMax = "25100000000000000000000";
-    let auditTokenMax = "25000000000000000000000";
 
-    let rewardTokens = "1000000000000000000";
     CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
 
-
     before(async () => {
-
+        token
         token = await TOKEN.deployed();
         members = await MEMBERS.deployed();
         await members.grantRole(CONTROLLER_ROLE, admin, { from: admin });
@@ -79,8 +64,6 @@ contract("Member contract", (accounts) => {
             assert.strictEqual(event.args.user, enterprise1);
             assert.strictEqual(event.args.name, "Enterprise 1");
         })
-
-
     })
 
 
@@ -107,8 +90,6 @@ contract("Member contract", (accounts) => {
             assert.strictEqual(event.args.user, validator1);
             assert.strictEqual(event.args.name, "Validator 1");
         })
-
-
     })
 
 
@@ -180,7 +161,6 @@ contract("Member contract", (accounts) => {
 
         it("It should succeed. updateMinDepositDays was updated by authorized user.", async () => {
 
-            // await members.grantRole(SETTER_ROLE, admin, { from: admin });
             await members.updateMinDepositDays("40", { from: admin });
             let minDepositDays = await members.minDepositDays();
             assert.strictEqual(minDepositDays.toString(), "40");
@@ -209,15 +189,12 @@ contract("Member contract", (accounts) => {
             }
         })
 
-
         it("It should succeed. updateAccessFee was updated by authorized user.", async () => {
 
-            // await members.grantRole(SETTER_ROLE, admin, { from: admin });
             await members.updateAccessFee("40", { from: admin });
             let accessFee = await members.accessFee();
             assert.strictEqual(accessFee.toString(), "40");
         })
-
 
         it("It should fail. updateAccessFee was updated by unauthorized user.", async () => {
 
@@ -274,13 +251,10 @@ contract("Member contract", (accounts) => {
 
         it("It should succeed. Quorum amount was updated by authorized user.", async () => {
 
-
-            // await members.grantRole(SETTER_ROLE, admin, { from: admin });
             await members.updateQuorum("20", { from: admin });
             let newQuorum = await members.requiredQuorum();
             assert.strictEqual(newQuorum.toString(), "20");
         })
-
 
         it("It should fail. Quorum amount was updated by unauthorized user.", async () => {
 
@@ -304,12 +278,8 @@ contract("Member contract", (accounts) => {
             }
         })
 
-
-
         it("It should succeed. updateDataSubscriberShares was updated by authorized user.", async () => {
 
-
-            // await members.grantRole(SETTER_ROLE, admin, { from: admin });
             await members.updateDataSubscriberShares("30", "40", { from: admin });
             let enterpriseShareSubscriber = await members.enterpriseShareSubscriber();
             let validatorShareSubscriber = await members.validatorShareSubscriber();
@@ -318,7 +288,6 @@ contract("Member contract", (accounts) => {
             assert.strictEqual(validatorShareSubscriber.toString(), "40");
 
         })
-
 
         it("It should fail. updateDataSubscriberShares was updated by unauthorized user.", async () => {
 
@@ -341,10 +310,5 @@ contract("Member contract", (accounts) => {
                 ensureException(error);
             }
         })
-
-
-
     })
-
-
 })

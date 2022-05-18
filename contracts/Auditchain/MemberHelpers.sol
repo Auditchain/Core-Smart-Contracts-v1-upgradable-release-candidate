@@ -4,12 +4,11 @@ import "./Members.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-
 import "./../IAuditToken.sol";
 import "./IValidations.sol";
 
 /**
- * @title MemberHelpersmemberHelpers
+ * @title MemberHelpers
  * Additional function for Members
  */
 contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpgradeable {
@@ -85,26 +84,20 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         require(amount > 0, "MH:stake - Amount can't be 0");
 
         if (members.userMap(msg.sender, Members.UserType(1))) {
-            require(
-                amount + deposits[msg.sender] >= minContribution,
-                "MH:stake - Minimum contribution amount is 5000 AUDT"
-            );
-            // require(
-            //     amount + deposits[msg.sender] <= maxContribution,
-            //     "MH:stake - Maximum contribution amount is 25000 AUDT"
-            // );
+            require(amount + deposits[msg.sender] >= minContribution, "MH:stake - Minimum contribution amount is 5000 AUDT");
+           
         }
-        require(
-            members.userMap(msg.sender, Members.UserType(0)) ||
+        require(members.userMap(msg.sender, Members.UserType(0)) ||
                 members.userMap(msg.sender, Members.UserType(1)) ||
                 members.userMap(msg.sender, Members.UserType(2)),
-            "MH:stake - User is not validator or enterprise."
-        );
+                                            "MH:stake - User is not validator or enterprise.");
+
         IERC20Upgradeable(auditToken).safeTransferFrom(msg.sender, address(this), amount);
         deposits[msg.sender] += amount;
         totalStaked += amount;
         emit LogDepositReceived(msg.sender, amount);
     }
+
 
     /**
      * @dev Function to redeem contribution.
@@ -121,6 +114,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         IERC20Upgradeable(auditToken).safeTransfer(msg.sender, amount);
         emit LogDepositRedeemed(msg.sender, amount);
     }
+    
 
     /**
      * @dev to be called by administrator to set Validation address

@@ -1,6 +1,5 @@
 import {
     ensureException,
-    duration
 } from './helpers/utils.js';
 
 
@@ -13,17 +12,10 @@ const VALIDATION = artifacts.require('../ValidationsNoCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
-
-
-
 import expectRevert from './helpers/expectRevert';
 import { assert } from 'chai';
 let BN = require("big-number");
 const timeMachine = require('ganache-time-traveler');
-
-
-
-
 
 contract("Node Operations contract", (accounts) => {
 
@@ -33,10 +25,8 @@ contract("Node Operations contract", (accounts) => {
     const validator2 = accounts[3];
     const validator3 = accounts[4];
     const validator4 = accounts[5];
-    const platformAccount = accounts[6];
     const dataSubscriber = accounts[7];
     const documentURL = "http://xbrlsite.azurewebsites.net/2021/reporting-scheme/proof/reference-implementation/instance.xml"
-
 
     let members;
     let token;
@@ -46,26 +36,14 @@ contract("Node Operations contract", (accounts) => {
     let validationHelpers;
     let queue;
 
-
     let documentHash;
-    let validationHash;
 
     let auditTokenMin = "5000000000000000000000";
-    let rewardTokensHalf = "341500000000000000000";
-    let rewardTokens = "1000000000000000000";
     let price = "2000000000000000000";
-
-
-    let cohortAddress;
-    let cohortContract;
-    let result;
 
     let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
     let SETTER_ROLE = web3.utils.keccak256("SETTER_ROLE");
     let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE");
-
-
-
 
     const tokenAmount1 = "9000000000000000000000000";
     const tokenAmount2 = "8500000000000000000000000";
@@ -73,8 +51,6 @@ contract("Node Operations contract", (accounts) => {
     const tokenAmount4 = "44443332220000000000000000";
     const tokenAmount5 = "14443332220000000000000000";
     let initialToken = "250000000000000000000000000";
-
-
 
     before(async () => {
 
@@ -108,8 +84,7 @@ contract("Node Operations contract", (accounts) => {
         await members.addUser(validator2, "Validators 2", 1, { from: admin });
         await members.addUser(validator3, "Validators 3", 1, { from: admin });
         await members.addUser(validator4, "Validators 4", 1, { from: admin });
-        await members.addUser(dataSubscriber, "DataSubscriberr 1", 2, { from: admin });
-
+        await members.addUser(dataSubscriber, "DataSubscriber 1", 2, { from: admin });
 
         await token.transfer(validator1, tokenAmount1);
         await token.transfer(validator2, tokenAmount2);
@@ -123,21 +98,17 @@ contract("Node Operations contract", (accounts) => {
         await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
         await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber });
 
-
-
         await memberHelpers.stake(auditTokenMin, { from: validator1 });
         await memberHelpers.stake(auditTokenMin, { from: validator2 });
         await memberHelpers.stake(auditTokenMin, { from: validator3 });
         await memberHelpers.stake(auditTokenMin, { from: validator4 });
         await memberHelpers.stake(auditTokenMin, { from: dataSubscriber });
 
-
         documentHash = web3.utils.soliditySha3(documentURL);
         await memberHelpers.grantRole(CONTROLLER_ROLE, validation.address, { from: admin });
         await nodeOperations.grantRole(SETTER_ROLE, admin, { from: admin });
 
     })
-
 
     describe("Deploy", async () => {
 
@@ -151,9 +122,6 @@ contract("Node Operations contract", (accounts) => {
         })
     })
 
-
-
-
     describe("Toggle Node Operator", async () => {
 
         it("It should succeed. toggleNodeOperator has been called by user who is a validator", async () => {
@@ -163,7 +131,6 @@ contract("Node Operations contract", (accounts) => {
             let event = result.logs[0];
             assert.equal(event.event, 'LogNodeOperatorToggled');
             let user = event.args.user;
-
 
             let isOperatorAfter = await nodeOperations.isNodeOperator(validator1);
             assert.strictEqual(isOperatorBefore, !isOperatorAfter);
@@ -246,7 +213,6 @@ contract("Node Operations contract", (accounts) => {
     describe("Delegate stake", async () => {
 
         it("It should succeed. Validator can delegate their stake to another node", async () => {
-
 
             await nodeOperations.toggleNodeOperator({ from: validator1 });
             let result = await nodeOperations.delegate(validator1, { from: validator2 });
@@ -387,7 +353,6 @@ contract("Node Operations contract", (accounts) => {
             documentHash = web3.utils.soliditySha3(documentURL + count);
             let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
-
             let event = result.logs[0];
             validationInitTime = event.args.initTime;
             hash = event.args.validationHash;
@@ -399,7 +364,6 @@ contract("Node Operations contract", (accounts) => {
             await nodeOperations.toggleNodeOperator({ from: validator1 });
             await nodeOperations.toggleNodeOperator({ from: validator2 });
           
-
             await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
             // ensure that user is not the winner for the proof of stake reward
@@ -427,7 +391,6 @@ contract("Node Operations contract", (accounts) => {
 
         it("It should succeed. Validator received correct stake rewards from their delegation", async () => {
 
-
             let deposit = await memberHelpers.returnDepositAmount(validator2);
             let delegatingRatio = await nodeOperations.stakeRatioDelegating();
             let oneValidationDelegating = BN(deposit.toString()).divide(BN(delegatingRatio.toString()));
@@ -435,7 +398,6 @@ contract("Node Operations contract", (accounts) => {
             await nodeOperations.toggleNodeOperator({ from: validator1 });
             await nodeOperations.delegate(validator1, { from: validator2 });
             await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-
 
             let nodeOperatorStruct = await nodeOperations.nodeOpStruct(validator2);
             let amount = nodeOperatorStruct.delegateAmount;
@@ -446,8 +408,6 @@ contract("Node Operations contract", (accounts) => {
             await nodeOperations.toggleNodeOperator({ from: validator1 });
 
         })
-
-
         
         it("It should succeed. Validator received correct stake rewards from their referral", async () => {
 
@@ -472,8 +432,6 @@ contract("Node Operations contract", (accounts) => {
             await nodeOperations.toggleNodeOperator({ from: validator1 });
             await nodeOperations.claimStakeRewards(false, { from: validator1 });
             await nodeOperations.claimStakeRewards(false, { from: validator2 });
-
-
         })
     })
 
@@ -482,7 +440,6 @@ contract("Node Operations contract", (accounts) => {
 
         let validationInitTime;
         let count = 10;
-
 
         beforeEach(async () => {
 
@@ -534,7 +491,6 @@ contract("Node Operations contract", (accounts) => {
 
             assert.strictEqual(depositAfterDifference.toString(), totalEarnedCalc.toString());
             assert.strictEqual(depositAfterDifference.toString(), amount.toString());
-
         })
 
 
@@ -614,9 +570,7 @@ contract("Node Operations contract", (accounts) => {
             let nodeOperatorStruct = await nodeOperations.nodeOpStruct(validator1);
             let amount = nodeOperatorStruct.POWAmount;
             assert.strictEqual(amount.toString(), POWFee.toString());
-
         })
-
     })
 
 
@@ -684,7 +638,5 @@ contract("Node Operations contract", (accounts) => {
                 ensureException(error);
             }
         })
-
-
     })
 })

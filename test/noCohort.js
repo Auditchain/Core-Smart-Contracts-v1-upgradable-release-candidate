@@ -1,6 +1,5 @@
 import {
     ensureException,
-    duration
 } from './helpers/utils.js';
 
 
@@ -12,14 +11,9 @@ const VALIDATION = artifacts.require('../ValidationsNoCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
-
-
 import expectRevert from './helpers/expectRevert';
 import { assert } from 'chai';
 let BN = require("big-number");
-
-
-
 
 contract("NoCohort Validations contract", (accounts) => {
 
@@ -29,7 +23,6 @@ contract("NoCohort Validations contract", (accounts) => {
     const validator2 = accounts[3];
     const validator3 = accounts[4];
     const validator4 = accounts[5];
-    const platformAccount = accounts[6];
     const dataSubscriber = accounts[7];
     const documentURL = "http://xbrlsite.azurewebsites.net/2021/reporting-scheme/proof/reference-implementation/instance.xml"
 
@@ -41,25 +34,14 @@ contract("NoCohort Validations contract", (accounts) => {
     let validationHelpers;
     let validation;
     let documentHash;
-    let validationHash;
     let queue;
 
     let auditTokenMin = "5000000000000000000000";
-    let rewardTokensHalf = "341500000000000000000";
-    let rewardTokens = "1000000000000000000";
     let price = "1000000000000000000";
     let replacementPrice = "2000000000000000000";
     let initialToken = "250000000000000000000000000";
 
-    let cohortAddress;
-    let cohortContract;
-    let result;
-
-    let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
     let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE");
-
-
-
 
     const tokenAmount1 = "9000000000000000000000000";
     const tokenAmount2 = "8500000000000000000000000";
@@ -90,9 +72,7 @@ contract("NoCohort Validations contract", (accounts) => {
         await members.addUser(validator3, "Validators 3", 1, { from: admin });
         await members.addUser(validator4, "Validators 4", 1, { from: admin });
 
-
-        await members.addUser(dataSubscriber, "DataSubscriberr 1", 2, { from: admin });
-
+        await members.addUser(dataSubscriber, "DataSubscriber 1", 2, { from: admin });
 
         await token.transfer(validator1, tokenAmount1);
         await token.transfer(validator2, tokenAmount2);
@@ -106,8 +86,6 @@ contract("NoCohort Validations contract", (accounts) => {
         await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
         await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber });
 
-
-
         await memberHelpers.stake(auditTokenMin, { from: validator1 });
         await memberHelpers.stake(auditTokenMin, { from: validator2 });
         await memberHelpers.stake(auditTokenMin, { from: validator3 });
@@ -118,8 +96,6 @@ contract("NoCohort Validations contract", (accounts) => {
         await nodeOperations.toggleNodeOperator({ from: validator2 });
         await nodeOperations.toggleNodeOperator({ from: validator3 });
         await nodeOperations.toggleNodeOperator({ from: validator4 });
-
-
 
         documentHash = web3.utils.soliditySha3(documentURL);
         await memberHelpers.grantRole(CONTROLLER_ROLE, validation.address, { from: admin });
@@ -256,7 +232,6 @@ contract("NoCohort Validations contract", (accounts) => {
 
         })
 
-
         it("Should succeed. Validation executed by all validators should result in total award equal payment fee for one validation", async () => {
 
 
@@ -273,7 +248,6 @@ contract("NoCohort Validations contract", (accounts) => {
 
             let event = result.logs[1];
             assert.equal(event.event, 'RequestExecuted');
-
 
             validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator1 });
             validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator2 });
@@ -310,7 +284,6 @@ contract("NoCohort Validations contract", (accounts) => {
             documentHash = web3.utils.soliditySha3(documentURL + count);
             let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
-
             let event = result.logs[0];
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
@@ -321,7 +294,7 @@ contract("NoCohort Validations contract", (accounts) => {
 
         it("It should succeed. The return value should be true.", async () => {
 
-            let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
             let isValidated = await validation.isValidated(validationHash, { from: validator1 });
             assert.strictEqual(isValidated.toString(), "1");
@@ -334,8 +307,6 @@ contract("NoCohort Validations contract", (accounts) => {
             assert.strictEqual(isValidated.toString(), "0");
         })
     })
-
-
 
     describe("Calculate Vote Quorum", async () => {
 
@@ -356,29 +327,24 @@ contract("NoCohort Validations contract", (accounts) => {
 
         it("Should succeed. Calculation is done against valid validation.", async () => {
 
-            let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
             let quorum = await validationHelpers.calculateVoteQuorum(validationHash, validation.address);
-
             assert.strictEqual(quorum.toString(), "25");
         })
 
         it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
+
             validationHash = web3.utils.soliditySha3(documentHash, 1, dataSubscriber);
-
             let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address);
-
             assert.strictEqual(result.toString(), "0");
 
         })
 
         it("Should fail. Calculation is done against valid validation with wrong requestor. ", async () => {
+
             validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
-
             let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address);
-
             assert.strictEqual(result.toString(), "0");
-
 
         })
     })
@@ -479,11 +445,6 @@ contract("NoCohort Validations contract", (accounts) => {
             } catch (error) {
                 ensureException(error);
             }
-
         })
-
-
     })
-
-
 })

@@ -6,6 +6,10 @@ import "./MemberHelpers.sol";
 import "./IQueue.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
+
+/**
+ * @title contains set of functions used mostly by Validations contracts. 
+ */
 contract ValidationHelpers is AccessControlUpgradeable {
 
     
@@ -18,8 +22,6 @@ contract ValidationHelpers is AccessControlUpgradeable {
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
 
 
-
-
     event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
 
 
@@ -28,16 +30,15 @@ contract ValidationHelpers is AccessControlUpgradeable {
         queue = IQueue(_queue);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
-
+    // allows on setting of validation contract address
     function setValAddress(address _valAddress) external {
         require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setValAddress - Caller is not a controller");
         require(_valAddress != address(0), "VH:setValAddress - address can't be 0");
         valAddresss[_valAddress] = true;
     }
 
-
+    // allows verification of existing validation by comparing its init time and document hash
     function isHashAndTimeCorrect( bytes32 documentHash, uint256 _validationTime) external  view returns (bool){
-
 
         bytes32 validationHash = keccak256(abi.encodePacked(documentHash, _validationTime));
 
@@ -48,11 +49,11 @@ contract ValidationHelpers is AccessControlUpgradeable {
             return false;
     }
 
-
+    // returns validation info of winning node
     function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime){
 
         require(validationHash != bytes32(0), "VH:returnWinnerStruct - hash can't be 0");
-        require(valAddresss[validationContract], "VH:returnWinnerStruct - val contract not registerd");
+        require(valAddresss[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
 
         (,,validationTime,,,,,,,winner) = IValidations(validationContract).returnValidationRecord(validationHash);
@@ -64,28 +65,31 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
 
     /**
-     * @dev replace or cancel existing validation waiting in the queue with different price
+     * @dev replace or cancel existing validation waiting in the queue with new price
      * @param price - new price, if price is 0 only remove request
      * @param validationHash validation hash for request
      */
     function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract) external {
 
         require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-        require(valAddresss[validationContract], "VH:replaceCancelValidation - val contract not registerd");
-
+        require(valAddresss[validationContract], "VH:replaceCancelValidation - val contract not registered");
 
         (,address requestor,,,,,,,,) = IValidations(validationContract).returnValidationRecord(validationHash);
 
-        // Validation storage VH = validations[validationHash];
         require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
         if (price == 0)
             assert(queue.removeFromQueue(validationHash));
         else
-            queue.replaceValidation(price, validationHash);
+            assert(queue.replaceValidation(price, validationHash));
             
         emit ReplaceCancelValidation(msg.sender, validationHash, price);
     }
 
+    /**
+      *@dev winner is being selected by sum of negative and positive votes and total compared with scores of other validators
+      *@param validationHash - hashed document hash with init time
+      *@param winners - array of addresses to select winner from
+     */
     function selectWinner(bytes32 validationHash, address[] memory winners) external view returns (address) {
 
         address winner = winners[0];
@@ -101,7 +105,10 @@ contract ValidationHelpers is AccessControlUpgradeable {
         return winner;
     }
 
-
+    /**
+      *@dev find out who won the validation race 
+      *@param validationHash - hashed document hash with init time
+     */
      function determineWinners(bytes32 validationHash) external  view returns (address[] memory, uint256){
 
         (address[] memory validator, uint256[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash);
@@ -139,8 +146,12 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
 
-
- function insertionSort(bytes32 validationHash) internal view returns (address[] memory, uint256[] memory, uint256[] memory) {
+    /**
+      * @dev  used during determination of validation winner
+      * @param validationHash hashed document hash with init time
+      * @return sorted list of validators with their choices and times
+     */
+    function insertionSort(bytes32 validationHash) internal view returns (address[] memory, uint256[] memory, uint256[] memory) {
 
         (address[] memory validator, ,uint256[] memory status, uint256[] memory validationTimes,,) =  IValidations(msg.sender).collectValidationResults(validationHash);
 
@@ -170,8 +181,13 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
 
+    /**
+      * @dev determine consensus of all validators
+      * @param validation list of choices by validators
+      * @return consensus which can be 1 or 2. 1 = acceptable 2 = failed
+     */
 
- function determineConsensus(uint256[] memory validation) public pure returns(uint256 ) {
+    function determineConsensus(uint256[] memory validation) public pure returns(uint256 ) {
 
         uint256 yes;
         uint256 no;
@@ -194,22 +210,20 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
 
    /**
-     * @dev to calculate state of the quorum for the validation
-     * @param validationHash - consist of hash of hashed document and timestamp
-     * @return number representing current participation level in percentage
-     */
+    * @dev to calculate state of the quorum for the validation
+    * @param validationHash - consist of hash of hashed document and timestamp
+    * @return number representing current participation level in percentage
+    */
     function calculateVoteQuorum(bytes32 validationHash, address validationContract)external view returns (uint256)
     {
 
         require(validationHash != bytes32(0), "VH:calculateVoteQuorum - hash can't be 0");
         require(valAddresss[validationContract], "VH:calculateVoteQuorum - val contract not registerd");
 
-
         uint256 totalStaked;
         uint256 currentlyVoted;
 
         address[] memory validatorsList = IValidations(validationContract).returnValidatorList(validationHash);
-        // require(validatorsList.length > 0, "ValidationHelpers:calculateVoteQuorum - There is no validators or hash was incorrect");
         (address[] memory validatorListActive, ,uint256[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         for (uint256 i = 0; i < validatorsList.length; i++) {
@@ -225,7 +239,4 @@ contract ValidationHelpers is AccessControlUpgradeable {
            return (currentlyVoted * 100) / totalStaked;
 
     }
-
-
-   
 }

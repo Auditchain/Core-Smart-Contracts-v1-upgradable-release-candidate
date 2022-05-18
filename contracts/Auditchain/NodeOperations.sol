@@ -42,11 +42,8 @@ contract NodeOperations is AccessControl {
 
     mapping(address => nodeOperator) public nodeOpStruct;
 
-
-
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
     bytes32 public constant SETTER_ROLE =  keccak256("SETTER_ROLE");
-
 
     event LogNodeOperatorToggled(address indexed user, string action);
     event LogCPAToggled(address indexed user, string action);
@@ -75,8 +72,8 @@ contract NodeOperations is AccessControl {
 
      /// @dev check if caller is a controller
     modifier isController(string memory source) {
-        // string memory msgError = string(abi.encodePacked("NodeOperations(isController - Modifier):", source, "- Caller is not a controller"));
-        require(hasRole(CONTROLLER_ROLE, msg.sender), "NO - isController: caller is not controller");
+        string memory msgError = string(abi.encodePacked("NO(isController):", source, "- Caller is not a controller"));
+        require(hasRole(CONTROLLER_ROLE, msg.sender), msgError);
 
         _;
     }
@@ -88,14 +85,16 @@ contract NodeOperations is AccessControl {
         _;
     }
 
+
     /// @dev check if user is validator
     modifier isValidator(string memory source) {
 
-        // string memory msgError = string(abi.encodePacked("NodeOperations(isValidator- Modifier):", source, "- You are not a validator"));
-        require( members.userMap(msg.sender, Members.UserType(1)), "isValidator: caller is not validator");
+        string memory msgError = string(abi.encodePacked("NO(isValidator):", source, "- You are not a validator"));
+        require( members.userMap(msg.sender, Members.UserType(1)), msgError);
 
         _;
     }
+
 
     function updateStakeRatioDelegating(uint256 _newRatio) external isSetter() {
 
@@ -105,12 +104,14 @@ contract NodeOperations is AccessControl {
         emit LogGovernanceUpdate(_newRatio, "updateStakeRatioDelegating");
     }
 
+
     function updateStakingRatioReferral(uint256 _newRatio) external isSetter() {
 
         require(_newRatio != 0, "NO:updateStakingRatioReferral - New ratio can't be 0");
         stakingRatioReferral = _newRatio;
         emit LogGovernanceUpdate(_newRatio, "updateStakingRatioReferral");
     }
+
 
     function updateStakeRatio(uint256 _newRatio) external isSetter() {
 
@@ -130,7 +131,6 @@ contract NodeOperations is AccessControl {
         return nodeOpStruct[operator].isNodeOperator;
 
     }
-
 
 
     /*** 
@@ -153,8 +153,9 @@ contract NodeOperations is AccessControl {
         return (poolUsers, poolUsersStakes);
     }
 
+
     /// remove all delegations for specific pool operator
-    function removeAlldelegations() public {
+    function removeAllDelegations() public {
 
         for (uint256 i = nodeOpStruct[msg.sender].delegations.length  ; i > 0; i--) {
             address delegating = nodeOpStruct[msg.sender].delegations[i-1];
@@ -163,6 +164,7 @@ contract NodeOperations is AccessControl {
             nodeOpStruct[delegating].delegatorLink = address(0x0);
         }
     }
+
     
     /// @dev change Node operator status from on to off or the vice versa 
     function toggleNodeOperator( ) external isValidator("toggleNodeOperator") {
@@ -171,16 +173,18 @@ contract NodeOperations is AccessControl {
         if (nodeOpStruct[msg.sender].isNodeOperator){
             nodeOpStruct[msg.sender].isNodeOperator = false;
             removeNodeOperator();
-            removeAlldelegations();
+            removeAllDelegations();
             emit LogNodeOperatorToggled(msg.sender, "OFF");
         }
         else{
-            require(memberHelpers.returnDepositAmount(msg.sender) >= memberHelpers.minContribution(), "NO:toggelNodeOperator - Minimum stake amount not met.");
+            require(memberHelpers.returnDepositAmount(msg.sender) >= memberHelpers.minContribution(), 
+                                                                    "NO:toggleNodeOperator - Minimum stake amount not met.");
             nodeOpStruct[msg.sender].isNodeOperator = true;
             nodeOperators.push(msg.sender);
             emit LogNodeOperatorToggled(msg.sender, "ON");
         }
     }
+
 
     /// @dev change CPA status from on to off or vice versa
     function toggleCPA( ) external isValidator("toggleCPA") {
@@ -197,6 +201,7 @@ contract NodeOperations is AccessControl {
         }
     }
 
+
     /// @dev change no delegate flag from on to off or vice versa
     function toggleNoDelegate( ) isValidator("toggleNoDelegate") external {
 
@@ -205,11 +210,12 @@ contract NodeOperations is AccessControl {
             emit LogNoDelegateToggled(msg.sender, "OFF");
         }
         else{
-            removeAlldelegations();
+            removeAllDelegations();
             nodeOpStruct[msg.sender].noDelegations = true;
             emit LogNoDelegateToggled(msg.sender, "ON");
         }
     }
+
 
     /// @dev remove CPA status
     function removeCPA() internal {
@@ -225,6 +231,7 @@ contract NodeOperations is AccessControl {
         }
     }
 
+
     /// @dev remove Node operator status 
     function removeNodeOperator() internal {
 
@@ -239,16 +246,19 @@ contract NodeOperations is AccessControl {
         }
     }
 
+
     /// return all node operators
     function returnNodeOperators() external view returns (address[] memory) {
 
         return nodeOperators;
     }
 
+
     function returnNodeOperatorsCount() external view returns(uint256){
 
         return nodeOperators.length;
     }
+
 
     /// return all CPAs
     function returnCPAs() external view returns (address[] memory) {
@@ -257,7 +267,6 @@ contract NodeOperations is AccessControl {
     }
     
     
-
     /// remove delegation for pool member 
     function removeDelegation() public isValidator("removeDelegation") {
 
@@ -278,6 +287,7 @@ contract NodeOperations is AccessControl {
 
         emit LogRemoveDelegation(msg.sender, oldDelegatee);
     }
+
 
     /*** 
     * @dev delegate stake to the pool 
@@ -333,6 +343,7 @@ contract NodeOperations is AccessControl {
         }
         return true;
     }
+    
 
     /*** 
     * @dev called by the Validations contract to increase pool operator stake reward amount

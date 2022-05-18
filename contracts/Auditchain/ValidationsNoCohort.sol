@@ -10,23 +10,20 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 
 /**
  * @title Validations
- * Allows on validation with and without cohort requested by data subscribers.
+ * Data subscriber can request financial document validation,
+ * which will be validated by group of node operators. 
  */
 contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     IMembers public members;
     IQueue public queue;
     IMemberHelpers public memberHelpers;
     INodeOperations public nodeOperations;
-    IValidatinoHelpers public validationHelpers;
+    IValidationHelpers public validationHelpers;
 
     mapping(address => uint256) public outstandingValidations;
 
     // Validation can be approved or disapproved. Initial status is undefined.
-    enum ValidationStatus {
-        Undefined,
-        Yes,
-        No
-    }
+    enum ValidationStatus { Undefined, Yes, No }
 
     struct Validation {
         bool cohort;
@@ -77,14 +74,14 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         members = IMembers(_members);
         memberHelpers = IMemberHelpers(_memberHelpers);
         nodeOperations = INodeOperations(_nodeOperations);
-        validationHelpers = IValidatinoHelpers(_validationHelpers);
+        validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
         quorum = 100;
     }
 
     /**
      * @dev verify if requesting party has sufficient funds
-     * @param requestor a user whos funds are checked
+     * @param requestor a user whose funds are checked
      * @return true or false
      */
     function checkIfRequestorHasFunds(address requestor, uint256 price) public view returns (bool)
@@ -94,9 +91,9 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev to be called by Enterprise to initiate new validation
-     * @param documentHash - hash of unique identifier of validated transaction
-     * @param url - locatoin of the file on IPFS or other decentralized file storage
+     * @dev to be called by user to validate fin statements
+     * @param documentHash - hashed document
+     * @param url - location of the document
      */
     function initValNoCohort(
         bytes32 documentHash,
@@ -126,6 +123,12 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         emit ValidationInitialized(msg.sender, validationHash, validationTime, documentHash, url);
     }
 
+    /**
+     *@dev each validator votes who is the winner
+     *@param winners - list of candidates to vote on
+     *@param vote - list of votes for each candidate
+     *@param validationHash - val in question 
+     */
     function voteWinner(
         address[] memory winners,
         bool[] memory vote,
@@ -135,9 +138,9 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
         for (uint8 i = 0; i < winners.length; i++) {
             if (vote[i])
-                validation.winnerVotesPlus[winners[i]] = validation.winnerVotesPlus[winners[i]] + 1;
+                validation.winnerVotesPlus[winners[i]] += 1;
             else
-                validation.winnerVotesMinus[winners[i]] = validation.winnerVotesMinus[winners[i]] + 1;
+                validation.winnerVotesMinus[winners[i]] +=  1;
 
             votes[msg.sender][validationHash] = true;
             emit WinnerVoted(msg.sender, winners[i], vote[i]);
@@ -161,18 +164,28 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         return nodeOperators.length;
     }
 
+    /**
+     *@dev returns list of registered validators 
+     *@return list of addresses 
+     */
     function returnValidatorList() public view returns (address[] memory) {
         address[] memory validatorsList = nodeOperations.returnNodeOperators();
         return validatorsList;
     }
 
 
-     // This function is for compatibility with contracts which are stil under develpment. 
+     // This function is for compatibility with ValidationHelper contract which will serve
+     // multiple versions requiring validation hash (still under development).
+
     function returnValidatorList( bytes32 vaHash ) public view returns (address[] memory) {
        return  returnValidatorList();
 
     }
 
+    /**
+     *@dev returns list of active validators
+     *@return list of addresses 
+     */
     function returnValidatorListActual(bytes32 validationHash) external view returns (address[] memory) {
 
         require(validationHash != bytes32(0), "VNC:returnValidatorListActual - invalid hash");
@@ -193,10 +206,10 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @dev Review the validation results
+     * @dev get validation results
      * @param validationHash - consist of hash of hashed document and timestamp
      * @return array  of validators
-     * @return array of stakes of each validatoralidation.requestor
+     * @return array of stakes of each validator
      * @return array of validation choices for each validator
      */
     function collectValidationResults(bytes32 validationHash)
@@ -253,6 +266,11 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         return votes[msg.sender][validationHash];
     }
 
+    /**
+     *@dev winner gets paid, requestor pays
+     *@param validationHash - consist of hash of hashed document and timestamp
+     *@param winner - address of the winner
+     */
     function processPayments(bytes32 validationHash, address winner) internal {
 
         Validation storage validation = validations[validationHash];
@@ -288,7 +306,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     /**
      * @dev called by validator to approve or disapprove this validation
      * @param documentHash - hash of validated document
-     * @param validationTime - this is the time when validation has been initialized
+     * @param validationTime - time when validation has been initialized
      * @param decision - one of the ValidationStatus choices cast by validator
      */
     function validate(
@@ -323,7 +341,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         emit ValidatorValidated(msg.sender, documentHash, validation.validatorTime[msg.sender], decision, valUrl);
 
         if (recentTimestamp > 0 && validation.executionTime == 0)
-            // this is not first transactoin and there was no execution
+            // this is not first transaction and there was no execution
             quorum = (activeOperatorsStake[validationTime][validationHash] * 100) / (activeOperatorsStake[recentTimestamp][recentValidationHash]);
 
         if ((quorum >= members.requiredQuorum() || quorum == 100) && validation.executionTime == 0)
