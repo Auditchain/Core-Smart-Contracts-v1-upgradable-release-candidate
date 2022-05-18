@@ -3,4 +3,6 @@ node_modules
 package-lock.json
 .js1
 build/
+settings.json
+.openzeppelin/
 
