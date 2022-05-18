@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.0;    
     
-interface IValidatinoHelpers {
+interface IValidationHelpers {
 
     function isHashAndTimeCorrect( bytes32 documentHash, uint256 _validationTime) external view returns (bool);
     function returnWinnerStruct(bytes32 validationHash, address contractAddress)external view returns (string memory valUrl, address winner);
