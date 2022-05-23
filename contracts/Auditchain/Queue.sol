@@ -9,7 +9,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
  */
 contract Queue is AccessControlEnumerableUpgradeable{
 
-    event ObjectCreated(uint256 id, uint256 price, bytes32 validationHash);
+    event ObjectCreated(uint256 id, uint256 price, bytes32 validationHash, bytes32 documentHash, string url, address user, uint256 initTime);
     event ObjectsLinked(uint256 prev, uint256 next);
     event ObjectRemoved(uint256 id);
     event NewHead(uint256 id);
@@ -19,6 +19,10 @@ contract Queue is AccessControlEnumerableUpgradeable{
         uint256 next;
         uint256 price;
         bytes32 validationHash;
+        bytes32 documentHash;
+        string url;
+        address user;
+        uint256 initTime;
         bool executed;
     }
 
@@ -49,9 +53,9 @@ contract Queue is AccessControlEnumerableUpgradeable{
      * @dev Retrieves the Object denoted by `_id`.
      */
     function get(uint256 _id) public virtual view 
-                               returns (uint256 id, uint256 next, uint256 price, bytes32 validationHash, bool executed){
+                               returns (uint256 id, uint256 next, uint256 price, bytes32 validationHash, bytes32 docuemntHash, string memory url, address user, uint256 initTime, bool executed){
         Object memory object = objects[_id];
-        return (object.id, object.next, object.price, object.validationHash, object.executed);
+        return (object.id, object.next, object.price, object.validationHash, object.documentHash, object.url, object.user, object.initTime, object.executed);
     }
 
 
@@ -125,9 +129,9 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object as the new Head with `_price` in the data field.
      */
-    function addHead(uint256 _price, bytes32 _validationHash) internal virtual{
+    function addHead(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime) internal virtual{
 
-        uint256 objectId = _createObject(_price, _validationHash);
+        uint256 objectId = _createObject(_price, _validationHash, _documentHash, _url, _user, _initTime);
         _link(objectId, head);
         _setHead(objectId);
     }
@@ -135,14 +139,15 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object as the new Tail with `_price` in the data field.
      */
-    function addTail(uint256 _price, bytes32 _validationHash) internal virtual{
+    function addTail(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime) internal virtual{
+
 
         if (head == 0) {
-            addHead(_price, _validationHash);
+            addHead(_price, _validationHash, _documentHash, _url, _user, _initTime);
         }
         else {
             uint256 oldTailId = findTailId();
-            uint256 newTailId = _createObject(_price, _validationHash);
+            uint256 newTailId = _createObject(_price, _validationHash, _documentHash, _url, _user, _initTime);
             _link(oldTailId, newTailId);
         }
     }
@@ -168,10 +173,12 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object after the Object denoted by `_id` with `_price` in the data field.
      */
-    function insertAfter(uint256 _prevId, uint256 _price, bytes32 validationHash) internal virtual{
+
+    function insertAfter(uint256 _prevId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime) internal virtual {
+
 
         Object memory prevObject = objects[_prevId];
-        uint256 newObjectId = _createObject(_price, validationHash);
+        uint256 newObjectId = _createObject(_price, _validationHash, _documentHash,  _url, _user, _initTime);
         _link(newObjectId, prevObject.next);
         _link(prevObject.id, newObjectId);
     }
@@ -179,14 +186,15 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object before the Object denoted by `_id` with `_price` in the data field.
      */
-    function insertBefore(uint256 _nextId, uint256 _price, bytes32 validationHash) internal virtual {
+    function insertBefore(uint256 _nextId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime) internal virtual {
+
 
         if (_nextId == head) {
-            addHead(_price, validationHash);
+            addHead(_price, _validationHash, _documentHash,  _url, _user, _initTime);
         }
         else {
             uint256 prevId = findPrevId(_nextId);
-            insertAfter(prevId, _price, validationHash);
+            insertAfter(prevId, _price, _validationHash, _documentHash,  _url, _user, _initTime);
         }
     }
 
@@ -202,17 +210,21 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Internal function to create an unlinked Object.
      */
-    function _createObject(uint256 _price, bytes32 _validationHash) internal returns (uint256){
+    function _createObject(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime) internal returns (uint256){
 
         uint256 newId = idCounter;
         idCounter += 1;
         
-        Object memory object = Object(newId, 0, _price, _validationHash, false);
+        Object memory object = Object(newId, 0, _price, _validationHash, _documentHash,  _url, _user, _initTime, false);
         objects[object.id] = object;
         emit ObjectCreated(
             object.id,
             object.price,
-            object.validationHash
+            object.validationHash,
+            object.documentHash,
+            object.url,
+            object.user,
+            object.initTime
         );
         return object.id;
     }
@@ -227,11 +239,10 @@ contract Queue is AccessControlEnumerableUpgradeable{
     }
 
 
-    function addToQueue(uint256 _price, bytes32 _validationHash) public isController() returns(bool){
+    function addToQueue(uint256 _price, bytes32 _validationHash,  bytes32 _documentHash, string memory _url, address _user, uint256 _initTime ) public isController() returns(bool){
         
-
        uint256 id = findIdForLesserPrice(_price);
-       insertBefore(id, _price, _validationHash);
+       insertBefore(id, _price, _validationHash, _documentHash, _url, _user, _initTime);
        queueCount++;
        return true;
 
@@ -243,12 +254,12 @@ contract Queue is AccessControlEnumerableUpgradeable{
     function getValidationToVote(bytes32 _lastValidationHash) external view returns (bytes32) {
 
         uint256 id = findIdForValidationHash(_lastValidationHash);
-        (,uint256 prevId,,,) = get(id);
+        (,uint256 prevId,,,,,,,) = get(id);
 
         bytes32 validationHash;
 
             if (objects[prevId].executed){
-                (,,,validationHash,) =   get(prevId);
+                (,,,validationHash,,,,,) =   get(prevId);
             } else
                 validationHash =  0x0;
 
@@ -260,7 +271,7 @@ contract Queue is AccessControlEnumerableUpgradeable{
     function getNextValidationToVote() external view returns(bytes32 validationHash) {
 
         if (objects[head].executed){
-                (,,,validationHash,) =   get(head);
+                (,,,validationHash,,,,,) =   get(head);
             } else
                 validationHash =  0x0;
         return validationHash;
@@ -271,21 +282,21 @@ contract Queue is AccessControlEnumerableUpgradeable{
     function getValidationToProcess(bytes32 _lastValidationHash) external view returns(bytes32 validationHash) {
 
         uint256 id = findIdForValidationHash(_lastValidationHash);
-        (,uint256 prevId,,,) = get(id);
+        (,uint256 prevId,,,,,,,) = get(id);
 
         if (prevId == 0)
             validationHash = 0x0;
         else{
-            (,,,validationHash,) =   get(prevId);
+            (,,,validationHash,,,,,) =   get(prevId);
             return validationHash;
         }
     }
 
 
-    function getNextValidation() external view returns(bytes32) {
+    function getNextValidation() external view returns(bytes32, bytes32, string memory, address, uint256) {
 
-        (,,,bytes32 validationHash,) = get(head);
-        return validationHash;
+        (,,,bytes32 validationHash, bytes32 documentHash,string memory url, address user, uint256 initTime,) = get(head);
+        return (validationHash, documentHash, url, user, initTime);
     }
 
 
@@ -312,9 +323,9 @@ contract Queue is AccessControlEnumerableUpgradeable{
 
 
     /// replace or remove pending validation 
-    function replaceValidation(uint256 newPrice, bytes32 _valHash) external isController() returns (bool){
+    function replaceValidation(uint256 newPrice, bytes32 _valHash, bytes32 _documentHash,string memory _url, address _user, uint256 _initTime) external isController() returns (bool){
         removeFromQueue(_valHash);
-        addToQueue(newPrice, _valHash); 
+        addToQueue(newPrice, _valHash, _documentHash, _url, _user, _initTime); 
         return true;
     }
 }
