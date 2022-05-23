@@ -118,7 +118,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         newValidation.cohort = isCohort;
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, validationHash));
+        assert(queue.addToQueue(price, validationHash, documentHash, url, msg.sender, validationTime));
 
         emit ValidationInitialized(msg.sender, validationHash, validationTime, documentHash, url);
     }
