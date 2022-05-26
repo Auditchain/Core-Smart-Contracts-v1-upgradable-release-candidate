@@ -38,7 +38,7 @@ module.exports = {
       port: 8545,
       // gas: 6721975,
       gas: 10000000,
-      gasPrice: 0x01,
+      gasPrice: 1000000000,
       network_id: "*", // Match any network id
       accounts: 10,
       defaultEtherBalance: 1000,
