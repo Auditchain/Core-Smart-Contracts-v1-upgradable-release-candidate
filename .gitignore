@@ -5,4 +5,5 @@ package-lock.json
 build/
 settings.json
 .openzeppelin/
+flat/
 
