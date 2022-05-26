@@ -87,7 +87,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
   let SETTER_ROLE = web3.utils.keccak256("SETTER_ROLE");
 
-  
+
   await deployProxy(Token, [admin], { deployer, initializer: 'initialize' });
   let token = await Token.deployed();
   console.log("token address:", token.address);
@@ -104,7 +104,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
 
 
 
-  await deployProxy(MemberHelpers, [members.address,  token.address], { deployer, initializer: 'initialize' });
+  await deployProxy(MemberHelpers, [members.address, token.address], { deployer, initializer: 'initialize' });
   let memberHelpers = await MemberHelpers.deployed();
   console.log("member helpers address:", memberHelpers.address);
 
@@ -126,12 +126,12 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let validationHelpers = await ValidationHelpers.deployed();
   console.log("validation helpers address:", validationHelpers.address);
 
-  await deployProxy(NoCohort, [members.address, memberHelpers.address, nodeOperations.address,  validationHelpers.address, queue.address], { deployer, initializer: 'initialize' } );
+  await deployProxy(NoCohort, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address], { deployer, initializer: 'initialize' });
   let noCohort = await NoCohort.deployed();
   console.log("no cohort address:", noCohort.address);
 
 
-  await deployProxy(NFT, ["AuditChain", "Rules", noCohort.address], { deployer, initializer: 'initialize' } );
+  await deployProxy(NFT, ["AuditChain", "Rules", noCohort.address], { deployer, initializer: 'initialize' });
   let nft = await NFT.deployed();
   console.log("NFT address:", nft.address);
 
@@ -164,9 +164,9 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('"VALIDATIONS_NO_COHORT_ADDRESS":"' + noCohort.address + '",')
   console.log('"NODE_OPERATIONS_ADDRESS":"' + nodeOperations.address + '",');
   console.log('"QUEUE_ADDRESS":"' + queue.address + '",');
-  console.log('"RULES_NFT_ADDRESS":"' + nft.address + '",' );
+  console.log('"RULES_NFT_ADDRESS":"' + nft.address + '",');
   console.log('"GOVERNOR_ALPHA_ADDRESS":"' + gov.address + '",');
-  console.log('"TIMELOCK_ADDRESS":"' + timelock.address + '",'+ "\n\n");
+  console.log('"TIMELOCK_ADDRESS":"' + timelock.address + '",' + "\n\n");
 
 
   await timelock.setPendingAdmin(gov.address, { from: admin });
@@ -220,7 +220,11 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });')
 
+  await validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });
+  console.log('validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
 
+  await validationHelpers.setValAddress(noCohort.address, { from: admin });
+  console.log('ValidationHelpers.setValAddress(noCohort.address, { from: admin });');
 
   await memberHelpers.setValidation(noCohort.address, { from: admin });
   console.log('memberHelpers.setValidation(cohort.address, { from: admin });');
@@ -231,7 +235,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
 
   await nodeOperations.grantRole(SETTER_ROLE, timelock.address, { from: admin });
   console.log('nodeOperations.grantRole(SETTER_ROLE, timelock.address, { from: admin });');
-  
+
 
   await members.addUser(validator1, "Validator 1", 1, { from: admin });
   console.log('members.addUser(validator1, "Validator 1", 1, { from: admin });');
