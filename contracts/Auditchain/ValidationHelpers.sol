@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity =0.8.0;
 
-import "./IValidations.sol";
 import "./MemberHelpers.sol";
 import "./IQueue.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
@@ -16,9 +15,8 @@ contract ValidationHelpers is AccessControlUpgradeable {
     enum ValidationStatus {Undefined, Yes, No}   // Validation can be approved or disapproved. Initial status is undefined.
     MemberHelpers public memberHelpers;
     IQueue public queue;
-    IValidations public valAddress;
 
-    mapping(address => bool) public valAddresss;
+    mapping(address => bool) public valAddresses;
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
 
 
@@ -34,7 +32,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     function setValAddress(address _valAddress) external {
         require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setValAddress - Caller is not a controller");
         require(_valAddress != address(0), "VH:setValAddress - address can't be 0");
-        valAddresss[_valAddress] = true;
+        valAddresses[_valAddress] = true;
     }
 
     // allows verification of existing validation by comparing its init time and document hash
@@ -53,7 +51,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime){
 
         require(validationHash != bytes32(0), "VH:returnWinnerStruct - hash can't be 0");
-        require(valAddresss[validationContract], "VH:returnWinnerStruct - val contract not registered");
+        require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
 
         (,,validationTime,,,,,,,winner) = IValidations(validationContract).returnValidationRecord(validationHash);
@@ -72,7 +70,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract) external {
 
         require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-        require(valAddresss[validationContract], "VH:replaceCancelValidation - val contract not registered");
+        require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
 
         (,address requestor,,,,,,,,) = IValidations(validationContract).returnValidationRecord(validationHash);
 
@@ -218,7 +216,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     {
 
         require(validationHash != bytes32(0), "VH:calculateVoteQuorum - hash can't be 0");
-        require(valAddresss[validationContract], "VH:calculateVoteQuorum - val contract not registerd");
+        require(valAddresses[validationContract], "VH:calculateVoteQuorum - val contract not registered");
 
         uint256 totalStaked;
         uint256 currentlyVoted;
