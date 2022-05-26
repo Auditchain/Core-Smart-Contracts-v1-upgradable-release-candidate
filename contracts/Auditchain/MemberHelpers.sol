@@ -70,7 +70,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         return true;
     }
 
-    function decreaseDeposit(address user, uint256 amount) external isController("decreaseDepoist") returns (bool){
+    function decreaseDeposit(address user, uint256 amount) external isController("decreaseDeposit") returns (bool){
         deposits[user] -= amount;
         emit LogDecreaseDeposit(user, amount);
         return true;
