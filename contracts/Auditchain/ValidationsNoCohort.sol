@@ -95,12 +95,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param documentHash - hashed document
      * @param url - location of the document
      */
-    function initValNoCohort(
-        bytes32 documentHash,
-        string memory url,
-        bool isCohort,
-        uint256 price) external  {
-
+  function initValNoCohort(bytes32 documentHash, string memory url, bool isCohort, uint256 price) external  {
 
         require(documentHash.length > 0, "VNC:initValNoCohort - Document hash value can't be 0");
         require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
@@ -129,10 +124,11 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      *@param vote - list of votes for each candidate
      *@param validationHash - val in question 
      */
-    function voteWinner(
-        address[] memory winners,
-        bool[] memory vote,
-        bytes32 validationHash ) external nonReentrant {
+    function voteWinner(address[] memory winners, bool[] memory vote, bytes32 validationHash ) external nonReentrant{
+
+        require(votes[msg.sender][validationHash] == false, "VNC:voteWinner - voted already");
+        require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
+
 
         Validation storage validation = validations[validationHash];
 
@@ -286,10 +282,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @param documentHash hash of the document
      */
-    function executeValidation(
-        bytes32 validationHash,
-        bytes32 documentHash,
-        uint256 _quorum) internal {
+    function executeValidation(bytes32 validationHash, bytes32 documentHash, uint256 _quorum) internal {
 
         Validation storage validation = validations[validationHash];
         validation.executionTime = block.timestamp;
