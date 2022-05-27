@@ -316,7 +316,7 @@ contract NodeOperations is AccessControl {
     * @param amount to aword to validator
     */
     function increasePOWRewards(address validator, uint256 amount) external isController("increasePOWRewards") returns(bool) {
-            nodeOpStruct[validator].POWAmount = nodeOpStruct[validator].POWAmount + amount;
+            nodeOpStruct[validator].POWAmount += amount;
             emit IncreasePOW(amount, validator);
             return true;
     }
