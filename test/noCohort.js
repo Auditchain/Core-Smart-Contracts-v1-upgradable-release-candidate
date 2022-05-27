@@ -249,10 +249,11 @@ contract("NoCohort Validations contract", (accounts) => {
             let event = result.logs[1];
             assert.equal(event.event, 'RequestExecuted');
 
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator1 });
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator2 });
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator3 });
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator4 });
+
+            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator1 });
+            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator2 });
+            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator3 });
+            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator4 });
 
             let depositAmountAfter1 = (await nodeOperations.nodeOpStruct(validator1)).POWAmount;
             let depositAmountAfter2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
