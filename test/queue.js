@@ -29,6 +29,13 @@ contract("Queue", (accounts) => {
     let trxHash = "0x44bd3e22479f8fab2aa3e9d55617f012a4cb13beb0bca204a070f41b04a4cdc5";
     let trxHash2 = "0x72bb7d6665d72c32432d2accd4f1f8391a548575d211e78c0615b2e3aaeb3cfb";
     let zeroTransaction = "0x0000000000000000000000000000000000000000000000000000000000000000";
+    let documentHash;
+    const documentURL = "http://xbrlsite.azurewebsites.net/2021/reporting-scheme/proof/reference-implementation/instance.xml"
+
+
+    documentHash = web3.utils.soliditySha3(documentURL);
+
+
 
 
     before(async () => {
@@ -67,7 +74,7 @@ contract("Queue", (accounts) => {
             let queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "0");
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
             queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "1");
 
@@ -88,7 +95,7 @@ contract("Queue", (accounts) => {
         it("Should succeed. Replace transaction with new price", async () => {
 
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
             let queueSize = await queue.queueCount();
             assert.strictEqual(queueSize.toString(), "1");
 
@@ -108,8 +115,9 @@ contract("Queue", (accounts) => {
         it("Should succeed. Find an item for lesser price", async () => {
 
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
 
             let id = await queue.findIdForLesserPrice(auditTokenPrice);
             let object = await queue.get(id.toString());
@@ -124,8 +132,8 @@ contract("Queue", (accounts) => {
         it("Should succeed. Retrieve item based on hash value", async () => {
 
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
 
 
             let id = await queue.findIdForValidationHash(trxHash2);
@@ -139,7 +147,7 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. Setting validation flag", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
             let id = await queue.findIdForValidationHash(trxHash);
             let object = await queue.get(id.toString());
             assert.strictEqual(object.executed, false);
@@ -155,11 +163,12 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets next record for validation", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
 
             let nextValidation = await queue.getNextValidation();
-            assert.strictEqual(nextValidation, trxHash);
+
+            assert.strictEqual(nextValidation[0], trxHash);
             await queue.removeFromQueue(trxHash);
             await queue.removeFromQueue(trxHash2);
 
@@ -168,18 +177,19 @@ contract("Queue", (accounts) => {
         it("Should succeed. It gets empty validation hash if no transaction exist for validation", async () => {
 
             let nextValidation = await queue.getNextValidation();
-            assert.strictEqual(nextValidation, zeroTransaction);
+            assert.strictEqual(nextValidation[0], zeroTransaction);
 
         })
 
         it("Should succeed. It gets next record for validation after one provided", async () => {
 
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
+
 
             let nextValidation = await queue.getNextValidation();
-            assert.strictEqual(nextValidation, trxHash);
+            assert.strictEqual(nextValidation[0], trxHash);
             nextValidation = await queue.getValidationToProcess(trxHash);
             assert.strictEqual(nextValidation, trxHash2);
             await queue.removeFromQueue(trxHash);
@@ -189,9 +199,9 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets empty validation hash for validation after one provided if none exists", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
             let nextValidation = await queue.getNextValidation();
-            assert.strictEqual(nextValidation, trxHash);
+            assert.strictEqual(nextValidation[0], trxHash);
             nextValidation = await queue.getValidationToProcess(trxHash);
 
             assert.strictEqual(nextValidation, zeroTransaction);
@@ -201,8 +211,8 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets next record for vote", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
             await queue.setValidatedFlag(trxHash);
 
             let nextValidation = await queue.getNextValidationToVote();
@@ -215,8 +225,8 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets next record for validation after one provided if there is none in the queue", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
             await queue.setValidatedFlag(trxHash);
             await queue.setValidatedFlag(trxHash2);
 
@@ -231,8 +241,8 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It gets empty validation hash record for validation after one provided if there is none in the queue", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
-            await queue.addToQueue(auditTokenHalf, trxHash2);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
+            await queue.addToQueue( auditTokenHalf, trxHash2, documentHash, documentURL, admin, 1);
             await queue.setValidatedFlag(trxHash);
 
             let validationToVote = await queue.getNextValidationToVote();
@@ -247,7 +257,7 @@ contract("Queue", (accounts) => {
 
         it("Should succeed. It should replace price of the submitted request in the queue", async () => {
 
-            await queue.addToQueue(auditTokenPrice, trxHash);
+            await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
 
             let elementData = await queue.findIdForValidationHash(trxHash);
             let object = await queue.get(elementData.toString());
