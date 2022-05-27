@@ -13,17 +13,12 @@ import "./../IAuditToken.sol";
 
 contract Members is  AccessControlEnumerableUpgradeable {
 
-    struct DataSubscriberTypes{
-        address cohort;
-        uint256 audits;
-    }
 
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
     bytes32 public constant SETTER_ROLE =  keccak256("SETTER_ROLE");
 
     IAuditToken public auditToken;                       //AUDT token 
     mapping(address => uint256) public deposits;        //track deposits per user
-    // mapping(address => DataSubscriberTypes[]) public dataSubscriberCohorts;
     mapping(address => mapping(address => bool)) public dataSubscriberCohortMap;
     uint256 public amountTokensPerValidation ;    //New minted amount per validation
 
