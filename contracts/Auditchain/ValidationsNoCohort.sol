@@ -142,7 +142,6 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             emit WinnerVoted(msg.sender, winners[i], vote[i]);
         }
 
-
         validation.winnerConfirmations++;
         uint256 operatorCount = returnValidatorCount(validationHash);
         uint256 currentQuorum = (validation.winnerConfirmations * 100) / operatorCount;
