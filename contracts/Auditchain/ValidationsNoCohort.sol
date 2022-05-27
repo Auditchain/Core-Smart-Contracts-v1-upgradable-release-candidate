@@ -142,6 +142,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             emit WinnerVoted(msg.sender, winners[i], vote[i]);
         }
 
+
         validation.winnerConfirmations++;
         uint256 operatorCount = returnValidatorCount(validationHash);
         uint256 currentQuorum = (validation.winnerConfirmations * 100) / operatorCount;
@@ -272,7 +273,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         Validation storage validation = validations[validationHash];
         outstandingValidations[validation.requestor] -= 1;
 
-        assert(memberHelpers.decreaseDeposit(validation.requestor,validation.price));
+        assert(memberHelpers.decreaseDeposit(validation.requestor, validation.price));
         assert(nodeOperations.increasePOWRewards(winner, validation.price));
         emit PaymentProcessed(validationHash, winner, validation.winnerVotesPlus[winner], validation.winnerVotesMinus[winner]);
     }
