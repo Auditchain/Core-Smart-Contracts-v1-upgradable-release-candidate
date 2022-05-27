@@ -9,10 +9,10 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
  */
 contract Queue is AccessControlEnumerableUpgradeable{
 
-    event ObjectCreated(uint256 id, uint256 price, bytes32 validationHash, bytes32 documentHash, string url, address user, uint256 initTime);
-    event ObjectsLinked(uint256 prev, uint256 next);
-    event ObjectRemoved(uint256 id);
-    event NewHead(uint256 id);
+
+    uint256 public head;
+    uint256 public idCounter;
+    uint256 public queueCount;
 
     struct Object{
         uint256 id;
@@ -26,12 +26,14 @@ contract Queue is AccessControlEnumerableUpgradeable{
         bool executed;
     }
 
-    uint256 public head;
-    uint256 public idCounter;
-    uint256 public queueCount;
     mapping (uint256 => Object) public objects;
 
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
+
+    event ObjectCreated(uint256 id, uint256 price, bytes32 validationHash, bytes32 documentHash, string url, address user, uint256 initTime);
+    event ObjectsLinked(uint256 prev, uint256 next);
+    event ObjectRemoved(uint256 id);
+    event NewHead(uint256 id);
 
     function initialize() initializer external {
 
@@ -321,11 +323,14 @@ contract Queue is AccessControlEnumerableUpgradeable{
         return queueCount;
     }
 
-
     /// replace or remove pending validation 
-    function replaceValidation(uint256 newPrice, bytes32 _valHash, bytes32 _documentHash,string memory _url, address _user, uint256 _initTime) external isController() returns (bool){
+    function replaceValidation(uint256 newPrice, bytes32 _valHash) external isController() returns (bool){
+
+        uint256 id = findIdForValidationHash(_valHash);
+        (,,,,bytes32 documentHash, string memory url, address user, uint256 initTime,) = get(id);
+        addToQueue(newPrice, _valHash, documentHash, url, user, initTime); 
         removeFromQueue(_valHash);
-        addToQueue(newPrice, _valHash, _documentHash, _url, _user, _initTime); 
+
         return true;
     }
 }
