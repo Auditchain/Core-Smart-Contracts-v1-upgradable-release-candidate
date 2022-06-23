@@ -55,7 +55,7 @@ contract Queue is AccessControlEnumerableUpgradeable{
      * @dev Retrieves the Object denoted by `_id`.
      */
     function get(uint256 _id) public virtual view 
-                               returns (uint256 id, uint256 next, uint256 price, bytes32 validationHash, bytes32 docuemntHash, string memory url, address user, uint256 initTime, bool executed){
+                               returns (uint256 id, uint256 next, uint256 price, bytes32 validationHash, bytes32 documentHash, string memory url, address user, uint256 initTime, bool executed){
         Object memory object = objects[_id];
         return (object.id, object.next, object.price, object.validationHash, object.documentHash, object.url, object.user, object.initTime, object.executed);
     }
@@ -281,16 +281,17 @@ contract Queue is AccessControlEnumerableUpgradeable{
 
 
     /// get validation to process after one provided
-    function getValidationToProcess(bytes32 _lastValidationHash) external view returns(bytes32 validationHash) {
+    function getValidationToProcess(bytes32 _lastValidationHash) external view returns(bytes32, bytes32, string memory, address, uint256) {
 
         uint256 id = findIdForValidationHash(_lastValidationHash);
         (,uint256 prevId,,,,,,,) = get(id);
 
         if (prevId == 0)
-            validationHash = 0x0;
+            return (bytes32(0x0), bytes32(0x0), "", address(0x0), 0);
         else{
-            (,,,validationHash,,,,,) =   get(prevId);
-            return validationHash;
+            (,,,bytes32 validationHash, bytes32 documentHash,string memory url, address user, uint256 initTime,) =  get(prevId);
+            
+            return (validationHash, documentHash, url, user, initTime);
         }
     }
 
