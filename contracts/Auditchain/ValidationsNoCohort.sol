@@ -52,6 +52,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     uint256 public quorum; //first validation will be 100% quorum
 
     mapping(bytes32 => Validation) public validations; // track each validation
+    uint256 public minValidators;
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
@@ -77,6 +78,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
         quorum = 100;
+        minValidators = 2;
     }
 
     /**
@@ -146,7 +148,8 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         uint256 operatorCount = returnValidatorCount(validationHash);
         uint256 currentQuorum = (validation.winnerConfirmations * 100) / operatorCount;
 
-        if (currentQuorum >= members.requiredQuorum() && validation.winner == address(0)) {
+        // if (currentQuorum >= members.requiredQuorum() && validation.winner == address(0)) {
+        if (validation.validationsCompleted >= minValidators && validation.winner == address(0)) {
             address winner = validationHelpers.selectWinner(validationHash, winners);
             validation.winner = winner;
             processPayments(validationHash, winner);
@@ -253,9 +256,9 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @return validation choices used by validator
      */
-    function isValidated(bytes32 validationHash) external view returns (ValidationStatus){
+    function isValidated(bytes32 validationHash) external view returns (ValidationStatus, uint256){
 
-        return validations[validationHash].validatorChoice[msg.sender];
+        return (validations[validationHash].validatorChoice[msg.sender], validations[validationHash].validationsCompleted);
     }
 
     function hasVoted(bytes32 validationHash) external view returns (bool) {
@@ -337,7 +340,8 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             // this is not first transaction and there was no execution
             quorum = (activeOperatorsStake[validationTime][validationHash] * 100) / (activeOperatorsStake[recentTimestamp][recentValidationHash]);
 
-        if ((quorum >= members.requiredQuorum() || quorum == 100) && validation.executionTime == 0)
+        if (validation.validationsCompleted >= minValidators && validation.executionTime == 0) 
+        // if ((quorum >= members.requiredQuorum() || quorum == 100) && validation.executionTime == 0)
             // first transaction quorum is 100% for first validator
             executeValidation(validationHash, documentHash, quorum);
 
