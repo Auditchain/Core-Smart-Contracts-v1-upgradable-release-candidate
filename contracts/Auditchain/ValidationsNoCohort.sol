@@ -42,17 +42,20 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         uint64 winnerConfirmations;
         address winner;
         uint256 price;
+        uint64 registeredNum;
     }
 
     mapping(address => mapping(bytes32 => bool)) public votes;
     mapping(uint256 => mapping(bytes32 => uint256)) public activeOperatorsStake;
+    mapping (address => uint256) registration;
+    uint256 registeredVal;
 
     uint256 public recentTimestamp;
     bytes32 public recentValidationHash;
     uint256 public quorum; //first validation will be 100% quorum
 
     mapping(bytes32 => Validation) public validations; // track each validation
-    uint256 public minValidators;
+    uint256 public maxValidators;
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
@@ -63,6 +66,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
     event PaymentProcessed(bytes32 validationHash, address winner, uint256 pointsPlus, uint256 pointsMinus);
     event WinnerVoted(address validator, address winner, bool isValid);
+    event ValRegistered(address indexed validator, bytes32 valHash);
 
     function initialize(
         address _members,
@@ -78,7 +82,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
         quorum = 100;
-        minValidators = 2;
+        maxValidators = 2;
     }
 
     /**
@@ -149,7 +153,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         uint256 currentQuorum = (validation.winnerConfirmations * 100) / operatorCount;
 
         // if (currentQuorum >= members.requiredQuorum() && validation.winner == address(0)) {
-        if (validation.validationsCompleted >= minValidators && validation.winner == address(0)) {
+        if (validation.validationsCompleted >= maxValidators && validation.winner == address(0)) {
             address winner = validationHelpers.selectWinner(validationHash, winners);
             validation.winner = winner;
             processPayments(validationHash, winner);
@@ -333,6 +337,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         uint256 stakeAmt = memberHelpers.returnDepositAmount(msg.sender);
 
         activeOperatorsStake[validation.validationTime][validationHash] += stakeAmt;
+        registration[msg.sender] = 0;
 
         emit ValidatorValidated(msg.sender, documentHash, validation.validatorTime[msg.sender], decision, valUrl);
 
@@ -340,7 +345,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             // this is not first transaction and there was no execution
             quorum = (activeOperatorsStake[validationTime][validationHash] * 100) / (activeOperatorsStake[recentTimestamp][recentValidationHash]);
 
-        if (validation.validationsCompleted >= minValidators && validation.executionTime == 0) 
+        if (validation.validationsCompleted >= maxValidators && validation.executionTime == 0) 
         // if ((quorum >= members.requiredQuorum() || quorum == 100) && validation.executionTime == 0)
             // first transaction quorum is 100% for first validator
             executeValidation(validationHash, documentHash, quorum);
@@ -383,11 +388,44 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             url = validation.validationUrl[user];
     }
 
-    function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
+    // function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
 
-        Validation storage validation = validations[validationHash];
-        plus = validation.winnerVotesPlus[user];
-        minus = validation.winnerVotesMinus[user];
+    //     Validation storage validation = validations[validationHash];
+    //     plus = validation.winnerVotesPlus[user];
+    //     minus = validation.winnerVotesMinus[user];
+    // }
+
+    function canValidate() public view returns (bytes32 valHash, uint256 prevVal) {
+
+        if (registration[msg.sender] == 0  && queue.returnQueueSize() > 0){
+            prevVal = queue.findPrevId( registeredVal);
+
+            (,,,valHash,,,,,) =  queue.get(prevVal);
+            Validation storage validation = validations[valHash];
+
+            if (validation.registeredNum < maxValidators) {
+               return (valHash, prevVal);
+            }
+        }
+
     }
+
+
+    function registerValidation() external  {
+
+       (bytes32 valHash, uint256 prevVal)  =  canValidate();
+
+            Validation storage validation = validations[valHash];
+
+            if (validation.registeredNum < maxValidators) {
+                registration[msg.sender] = prevVal;
+                registeredVal = prevVal;
+                validation.registeredNum ++;
+            }
+
+        emit ValRegistered(msg.sender,valHash);
+
+        }
+
      
 }
