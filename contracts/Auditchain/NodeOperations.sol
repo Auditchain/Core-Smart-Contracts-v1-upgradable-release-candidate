@@ -64,9 +64,9 @@ contract NodeOperations is AccessControl {
         memberHelpers = MemberHelpers(_memberHelpers);
         auditToken = _auditToken;
         members = Members(_members);    
-        stakeRatio = 1000;
-        stakeRatioDelegating = 1100;
-        stakingRatioReferral = 9100;
+        stakeRatio = 100000;
+        stakeRatioDelegating = 110000;
+        stakingRatioReferral = 910000;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
