@@ -46,23 +46,19 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     }
 
     mapping(address => mapping(bytes32 => bool)) public votes;
-    mapping(uint256 => mapping(bytes32 => uint256)) public activeOperatorsStake;
-    mapping (address => uint256) registration;
-    uint256 registeredVal;
-
-    uint256 public recentTimestamp;
-    bytes32 public recentValidationHash;
-    uint256 public quorum; //first validation will be 100% quorum
+    mapping(uint256 => mapping(bytes32 => uint256)) public actOpStake;
+    mapping (address => uint256) public reg;
 
     mapping(bytes32 => Validation) public validations; // track each validation
     uint256 public maxValidators;
+    uint256 public processedId;
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
-                          uint256 quorum, uint256 timeExecuted, string url, address[] winners);
+                        uint256 timeExecuted, string url, address[] winners);
 
     event PaymentProcessed(bytes32 validationHash, address winner, uint256 pointsPlus, uint256 pointsMinus);
     event WinnerVoted(address validator, address winner, bool isValid);
@@ -81,7 +77,6 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         nodeOperations = INodeOperations(_nodeOperations);
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
-        quorum = 100;
         maxValidators = 2;
     }
 
@@ -98,30 +93,30 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
     /**
      * @dev to be called by user to validate fin statements
-     * @param documentHash - hashed document
+     * @param docHash - hashed document
      * @param url - location of the document
      */
-  function initValNoCohort(bytes32 documentHash, string memory url, bool isCohort, uint256 price) external  {
+  function initValNoCohort(bytes32 docHash, string memory url, bool isCohort, uint256 price) external  {
 
-        require(documentHash.length > 0, "VNC:initValNoCohort - Document hash value can't be 0");
+        require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
         require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
-        require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - You have to register as data subscriber");
+        require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
 
-        uint256 validationTime = block.timestamp;
-        bytes32 validationHash = keccak256(abi.encodePacked(documentHash, validationTime, msg.sender));
+        uint256 valTime = block.timestamp;
+        bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, msg.sender));
 
         outstandingValidations[msg.sender]++;
-        Validation storage newValidation = validations[validationHash];
+        Validation storage newValidation = validations[valHash];
 
         newValidation.url = url;
-        newValidation.validationTime = validationTime;
+        newValidation.validationTime = valTime;
         newValidation.requestor = msg.sender;
         newValidation.cohort = isCohort;
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, validationHash, documentHash, url, msg.sender, validationTime));
+        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, valTime));
 
-        emit ValidationInitialized(msg.sender, validationHash, validationTime, documentHash, url);
+        emit ValidationInitialized(msg.sender, valHash, valTime, docHash, url);
     }
 
     /**
@@ -149,11 +144,8 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         }
 
         validation.winnerConfirmations++;
-        uint256 operatorCount = returnValidatorCount(validationHash);
-        uint256 currentQuorum = (validation.winnerConfirmations * 100) / operatorCount;
-
-        // if (currentQuorum >= members.requiredQuorum() && validation.winner == address(0)) {
-        if (validation.validationsCompleted >= maxValidators && validation.winner == address(0)) {
+      
+        if (validation.winnerConfirmations >= maxValidators && validation.winner == address(0)) {
             address winner = validationHelpers.selectWinner(validationHash, winners);
             validation.winner = winner;
             processPayments(validationHash, winner);
@@ -260,7 +252,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @return validation choices used by validator
      */
-    function isValidated(bytes32 validationHash) external view returns (ValidationStatus, uint256){
+    function isValidated(bytes32 validationHash) public view returns (ValidationStatus, uint256){
 
         return (validations[validationHash].validatorChoice[msg.sender], validations[validationHash].validationsCompleted);
     }
@@ -269,7 +261,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         return votes[msg.sender][validationHash];
     }
 
-    /**
+    /**isValidated
      *@dev winner gets paid, requestor pays
      *@param validationHash - consist of hash of hashed document and timestamp
      *@param winner - address of the winner
@@ -289,7 +281,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @param documentHash hash of the document
      */
-    function executeValidation(bytes32 validationHash, bytes32 documentHash, uint256 _quorum) internal {
+    function executeValidation(bytes32 validationHash, bytes32 documentHash) internal {
 
         Validation storage validation = validations[validationHash];
         validation.executionTime = block.timestamp;
@@ -297,32 +289,31 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         (address[] memory winners, uint256 consensus) = validationHelpers.determineWinners(validationHash);
 
         validation.consensus = consensus;
-        recentTimestamp = validation.validationTime;
-        recentValidationHash = validationHash;
+        processedId = queue.findIdForValidationHash(validationHash);
         assert(queue.setValidatedFlag(validationHash));
-        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus, _quorum, block.timestamp, validation.url,winners);
+        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url,winners);
     }
 
     /**
      * @dev called by validator to approve or disapprove this validation
-     * @param documentHash - hash of validated document
-     * @param validationTime - time when validation has been initialized
+     * @param docHash - hash of validated document
+     * @param valTime - time when validation has been initialized
      * @param decision - one of the ValidationStatus choices cast by validator
      */
     function validate(
-        bytes32 documentHash,
-        uint256 validationTime,
+        bytes32 docHash,
+        uint256 valTime,
         address subscriber,
         ValidationStatus decision,
         string memory valUrl,
         bytes32 reportHash) external virtual nonReentrant {
 
-        bytes32 validationHash = keccak256(abi.encodePacked(documentHash, validationTime, subscriber));
+        bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, subscriber));
 
-        Validation storage validation = validations[validationHash];
+        Validation storage validation = validations[valHash];
 
         require(members.userMap(msg.sender, IMembers.UserType(1)), "VNC:validate - not authorized.");
-        require(validation.validationTime == validationTime,"VNC:validate - params don't match.");
+        require(validation.validationTime == valTime,"VNC:validate - params don't match.");
         require(validation.validatorChoice[msg.sender] == ValidationStatus.Undefined, "VNC:validate - validated already.");
         require(nodeOperations.returnDelegatorLink(msg.sender) == address(0x0), "VNC:validate - delegated stake, can't validate");
         require(nodeOperations.isNodeOperator(msg.sender),"VNC:validate - not a node operator");
@@ -333,22 +324,16 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         validation.validationHash[msg.sender] = reportHash;
 
         validation.validationsCompleted++;
+        reg[msg.sender] == 0;
 
         uint256 stakeAmt = memberHelpers.returnDepositAmount(msg.sender);
 
-        activeOperatorsStake[validation.validationTime][validationHash] += stakeAmt;
-        registration[msg.sender] = 0;
+        actOpStake[validation.validationTime][valHash] += stakeAmt;
 
-        emit ValidatorValidated(msg.sender, documentHash, validation.validatorTime[msg.sender], decision, valUrl);
-
-        if (recentTimestamp > 0 && validation.executionTime == 0)
-            // this is not first transaction and there was no execution
-            quorum = (activeOperatorsStake[validationTime][validationHash] * 100) / (activeOperatorsStake[recentTimestamp][recentValidationHash]);
+        emit ValidatorValidated(msg.sender, docHash, validation.validatorTime[msg.sender], decision, valUrl);
 
         if (validation.validationsCompleted >= maxValidators && validation.executionTime == 0) 
-        // if ((quorum >= members.requiredQuorum() || quorum == 100) && validation.executionTime == 0)
-            // first transaction quorum is 100% for first validator
-            executeValidation(validationHash, documentHash, quorum);
+            executeValidation(valHash, docHash);
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
         assert(nodeOperations.increaseDelegatedStakeRewards(msg.sender));
@@ -388,44 +373,35 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             url = validation.validationUrl[user];
     }
 
-    // function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
+    function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
 
-    //     Validation storage validation = validations[validationHash];
-    //     plus = validation.winnerVotesPlus[user];
-    //     minus = validation.winnerVotesMinus[user];
-    // }
-
-    function canValidate() public view returns (bytes32 valHash, uint256 prevVal) {
-
-        if (registration[msg.sender] == 0  && queue.returnQueueSize() > 0){
-            prevVal = queue.findPrevId( registeredVal);
-
-            (,,,valHash,,,,,) =  queue.get(prevVal);
-            Validation storage validation = validations[valHash];
-
-            if (validation.registeredNum < maxValidators) {
-               return (valHash, prevVal);
-            }
-        }
-
+        Validation storage validation = validations[validationHash];
+        plus = validation.winnerVotesPlus[user];
+        minus = validation.winnerVotesMinus[user];
     }
-
 
     function registerValidation() external  {
 
-       (bytes32 valHash, uint256 prevVal)  =  canValidate();
+    //    (bytes32 valHash, uint256 prevVal)  =  canValidate();
 
-            Validation storage validation = validations[valHash];
+       bytes32 valHash;
 
-            if (validation.registeredNum < maxValidators) {
-                registration[msg.sender] = prevVal;
-                registeredVal = prevVal;
-                validation.registeredNum ++;
-            }
+       if (  queue.returnQueueSize() > 0 ){
 
-        emit ValRegistered(msg.sender,valHash);
+            uint256 prevVal = queue.findPrevId( processedId > reg[msg.sender] ? processedId: reg[msg.sender]); 
+                (,,,valHash,,,,,) =  queue.get(prevVal);
+                Validation storage va = validations[valHash];
 
+                if (va.registeredNum < maxValidators && valHash != 0x0) {
+                    reg[msg.sender] = prevVal;
+                    va.registeredNum ++;
+
+
+                    if (va.registeredNum >=  maxValidators )
+                        processedId = prevVal;
+                }
         }
-
+        emit ValRegistered(msg.sender, valHash);
+    }
      
 }
