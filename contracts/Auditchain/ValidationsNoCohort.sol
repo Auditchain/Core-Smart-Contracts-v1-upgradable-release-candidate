@@ -48,13 +48,15 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     mapping(address => mapping(bytes32 => bool)) public votes;
     mapping(uint256 => mapping(bytes32 => uint256)) public actOpStake;
     mapping (address => uint256) public reg;
+    mapping (address => uint256) public regP;
+
 
     mapping(bytes32 => Validation) public validations; // track each validation
     uint256 public maxValidators;
     uint256 public processedId;
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
-    event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
+    event ValidatorValidated(address indexed va0xAf03ED66ABFD254EFE80a7A067092bD477e990C2lidator, bytes32 indexed documentHash, uint256 indexed validationTime, 
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
@@ -78,6 +80,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
         maxValidators = 2;
+        processedId = 1;
     }
 
     /**
@@ -98,25 +101,24 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      */
   function initValNoCohort(bytes32 docHash, string memory url, bool isCohort, uint256 price) external  {
 
-        require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
-        require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
-        require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
+        // require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
+        // require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
+        // require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
 
-        uint256 valTime = block.timestamp;
-        bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, msg.sender));
+        bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
         outstandingValidations[msg.sender]++;
         Validation storage newValidation = validations[valHash];
 
         newValidation.url = url;
-        newValidation.validationTime = valTime;
+        newValidation.validationTime = block.timestamp;
         newValidation.requestor = msg.sender;
         newValidation.cohort = isCohort;
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, valTime));
+        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, block.timestamp));
 
-        emit ValidationInitialized(msg.sender, valHash, valTime, docHash, url);
+        emit ValidationInitialized(msg.sender, valHash, block.timestamp, docHash, url);
     }
 
     /**
@@ -324,13 +326,12 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         validation.validationHash[msg.sender] = reportHash;
 
         validation.validationsCompleted++;
-        reg[msg.sender] == 0;
+        reg[msg.sender] = 0;
 
-        uint256 stakeAmt = memberHelpers.returnDepositAmount(msg.sender);
 
-        actOpStake[validation.validationTime][valHash] += stakeAmt;
+        actOpStake[validation.validationTime][valHash] += memberHelpers.returnDepositAmount(msg.sender);
 
-        emit ValidatorValidated(msg.sender, docHash, validation.validatorTime[msg.sender], decision, valUrl);
+        emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
 
         if (validation.validationsCompleted >= maxValidators && validation.executionTime == 0) 
             executeValidation(valHash, docHash);
@@ -380,27 +381,53 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         minus = validation.winnerVotesMinus[user];
     }
 
+    function setPos(uint256 prevVal) internal {
+
+        reg[msg.sender] = prevVal;
+        regP[msg.sender] = prevVal;
+        (,,,bytes32 valHash,,,,,) =  queue.get(processedId);
+        Validation storage va = validations[valHash];
+        va.registeredNum ++;
+    }
+
     function registerValidation() external  {
 
-    //    (bytes32 valHash, uint256 prevVal)  =  canValidate();
-
        bytes32 valHash;
+       uint256 prevVal;
 
-       if (  queue.returnQueueSize() > 0 ){
+       if (  queue.returnQueueSize() > 0 && reg[msg.sender] == 0){
 
-            uint256 prevVal = queue.findPrevId( processedId > reg[msg.sender] ? processedId: reg[msg.sender]); 
-                (,,,valHash,,,,,) =  queue.get(prevVal);
-                Validation storage va = validations[valHash];
+            (,,,valHash,,,,,) =  queue.get(processedId);
+            Validation storage va = validations[valHash];
 
-                if (va.registeredNum < maxValidators && valHash != 0x0) {
-                    reg[msg.sender] = prevVal;
-                    va.registeredNum ++;
+            if (va.registeredNum < maxValidators && valHash != 0x0 && regP[msg.sender] < processedId) {
+
+                setPos(processedId);
+
+                if (va.registeredNum ==  maxValidators )
+                    (,processedId,,,,,,,) = queue.get(processedId); 
 
 
-                    if (va.registeredNum >=  maxValidators )
-                        processedId = prevVal;
-                }
-        }
+            } else if (va.registeredNum >= maxValidators && regP[msg.sender] >= processedId) {
+                (,prevVal,,,,,,,) = queue.get( regP[msg.sender] ); 
+                uint256 head = queue.head();
+
+                if (head > prevVal)
+                    prevVal = head;
+                    
+                setPos(prevVal);
+
+            }  else {
+                valHash = 0x0;
+            }
+
+        } else if (  reg[msg.sender] > 0){
+                (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
+                if (valHash == 0x0)
+                    reg[msg.sender]= 0;
+
+            } 
+
         emit ValRegistered(msg.sender, valHash);
     }
      
