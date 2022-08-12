@@ -56,7 +56,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     uint256 public processedId;
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
-    event ValidatorValidated(address indexed va0xAf03ED66ABFD254EFE80a7A067092bD477e990C2lidator, bytes32 indexed documentHash, uint256 indexed validationTime, 
+    event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
