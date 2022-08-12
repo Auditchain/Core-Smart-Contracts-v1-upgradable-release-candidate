@@ -12,4 +12,5 @@ interface IQueue {
     (uint256 id, uint256 next, uint256 price, bytes32 validationHash, bytes32 documentHash, string memory url, address user, uint256 initTime, bool executed);
     function findPrevId(uint256 _id) external view returns (uint256);
     function findIdForValidationHash(bytes32 _validationHash)external view returns (uint256);
+    function head() external view returns (uint256);
 }
