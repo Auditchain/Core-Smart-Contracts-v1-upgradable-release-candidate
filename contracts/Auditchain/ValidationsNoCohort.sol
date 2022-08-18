@@ -130,7 +130,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     function voteWinner(address[] memory winners, bool[] memory vote, bytes32 validationHash ) external nonReentrant{
 
         require(votes[msg.sender][validationHash] == false, "VNC:voteWinner - voted already");
-        require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
+        // require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
 
 
         Validation storage validation = validations[validationHash];
@@ -183,71 +183,51 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      *@dev returns list of active validators
      *@return list of addresses 
      */
-    function returnValidatorListActual(bytes32 validationHash) external view returns (address[] memory) {
+    // function returnValidatorListActual(bytes32 validationHash) external view returns (address[] memory) {
 
-        require(validationHash != bytes32(0), "VNC:returnValidatorListActual - invalid hash");
+    //     require(validationHash != bytes32(0), "VNC:returnValidatorListActual - invalid hash");
 
-        Validation storage validation = validations[validationHash];
-        uint256 j = 0;
+    //     Validation storage validation = validations[validationHash];
+    //     uint256 j = 0;
 
-        address[] memory validatorListActive = new address[](validation.validationsCompleted);
-        address[] memory validatorsList = nodeOperations.returnNodeOperators();
+    //     address[] memory validatorListActive = new address[](validation.validationsCompleted);
+    //     address[] memory validatorsList = nodeOperations.returnNodeOperators();
 
-        for (uint256 i = 0; i < validatorsList.length; i++) {
-            if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
-                validatorListActive[j] = validatorsList[i];
-                j++;
-            }
-        }
-        return validatorListActive;
-    }
+    //     for (uint256 i = 0; i < validatorsList.length; i++) {
+    //         if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
+    //             validatorListActive[j] = validatorsList[i];
+    //             j++;
+    //         }
+    //     }
+    //     return validatorListActive;
+    // }
 
-    /**
-     * @dev get validation results
-     * @param validationHash - consist of hash of hashed document and timestamp
-     * @return array  of validators
-     * @return array of stakes of each validator
-     * @return array of validation choices for each validator
-     */
-    function collectValidationResults(bytes32 validationHash)
-        public
-        view
-        returns (
-            address[] memory,
-            uint256[] memory,
-            uint256[] memory,
-            uint256[] memory,
-            string[] memory,
-            bytes32[] memory
-        )
-    {
-        uint256 j = 0;
-        Validation storage validation = validations[validationHash];
+    // /**
+    //  * @dev get validation results
+    //  * @param validationHash - consist of hash of hashed document and timestamp
+    //  * @return valList -  array  of validators
+    //  * @return stake - array of stakes of each validator
+    //  * @return choice - array of validation choices for each validator
+    //  * @return time - array of validation times for each validator
+    //  * @return url - array of validation url for each validator
+    //  * @return hash - array of validation hashes for each validator
+    //  */
+    
 
-        address[] memory validatorsList = returnValidatorList();
-        address[] memory validatorListActive = new address[](validation.validationsCompleted);
-        uint256[] memory stake = new uint256[](validation.validationsCompleted);
-        uint256[] memory validatorsValues = new uint256[](validation.validationsCompleted);
-        uint256[] memory validationTime = new uint256[](validation.validationsCompleted);
-        string[] memory validationUrl = new string[](validation.validationsCompleted);
-        bytes32[] memory reportHash = new bytes32[](validation.validationsCompleted);
+    //  function collectValidationResults(bytes32 validationHash) public view  returns (
+    //             address[] memory valList ,
+    //             uint256[] memory stake,
+    //             uint256[] memory choice,
+    //             uint256[] memory time,
+    //             string[] memory url,
+    //             bytes32[] memory hash
+    //     ) {
 
-        for (uint256 i = 0; i < validatorsList.length; i++) {
-            if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
+    //     Validation storage validation = validations[validationHash];
 
-                stake[j] = memberHelpers.returnDepositAmount(validatorsList[i]);
-                validatorsValues[j] = uint256(validation.validatorChoice[validatorsList[i]]);
-                validationTime[j] = validation.validatorTime[validatorsList[i]];
-                validationUrl[j] = validation.validationUrl[validatorsList[i]];
-                validatorListActive[j] = validatorsList[i];
-                reportHash[j] = validation.validationHash[validatorsList[i]];
-                j++;
-            }
-        }
-        return (
-            validatorListActive, stake, validatorsValues, validationTime, validationUrl, reportHash
-        );
-    }
+    //     (valList, stake, choice, time, url, hash) = validationHelpers.collectValidationResults(address(this) );
+    //     return (valList, stake, choice, time, url, hash);
+    // }
 
     /**
      * @dev validators can check if specific document has been already validated by them
@@ -283,7 +263,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @param documentHash hash of the document
      */
-    function executeValidation(bytes32 validationHash, bytes32 documentHash) internal {
+    function executeValidation(bytes32 validationHash, bytes32 documentHash) internal nonReentrant{
 
         Validation storage validation = validations[validationHash];
         validation.executionTime = block.timestamp;
@@ -291,7 +271,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         (address[] memory winners, uint256 consensus) = validationHelpers.determineWinners(validationHash);
 
         validation.consensus = consensus;
-        processedId = queue.findIdForValidationHash(validationHash);
+        // processedId = queue.findIdForValidationHash(validationHash);
         assert(queue.setValidatedFlag(validationHash));
         emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url,winners);
     }
@@ -308,7 +288,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         address subscriber,
         ValidationStatus decision,
         string memory valUrl,
-        bytes32 reportHash) external virtual nonReentrant {
+        bytes32 reportHash) external virtual  {
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, subscriber));
 
@@ -381,54 +361,142 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         minus = validation.winnerVotesMinus[user];
     }
 
-    function setPos(uint256 prevVal) internal {
+    function setPos(uint256 prevVal, bytes32 valHash) internal returns (bool){
 
-        reg[msg.sender] = prevVal;
-        regP[msg.sender] = prevVal;
-        (,,,bytes32 valHash,,,,,) =  queue.get(processedId);
-        Validation storage va = validations[valHash];
-        va.registeredNum ++;
+            Validation storage va = validations[valHash];
+
+            if (va.registeredNum <  maxValidators && regP[msg.sender] != prevVal ){
+
+                va.registeredNum ++;
+
+                reg[msg.sender] = prevVal;
+                regP[msg.sender] = prevVal;
+                (,prevVal ,,,,,,,) = queue.get(processedId); 
+
+                if (prevVal !=0 && va.registeredNum == maxValidators)
+                    processedId = prevVal;
+                
+                return true;
+
+            } else {
+                return false;
+            }
     }
-
-    function registerValidation() external  {
+    function registerValidation() external {
 
        bytes32 valHash;
        uint256 prevVal;
 
-       if (  queue.returnQueueSize() > 0 && reg[msg.sender] == 0){
+
+       if (  queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
 
             (,,,valHash,,,,,) =  queue.get(processedId);
-            Validation storage va = validations[valHash];
+            prevVal = processedId;
 
-            if (va.registeredNum < maxValidators && valHash != 0x0 && regP[msg.sender] < processedId) {
-
-                setPos(processedId);
-
-                if (va.registeredNum ==  maxValidators )
-                    (,processedId,,,,,,,) = queue.get(processedId); 
+            // Validation storage va = validations[valHash];
 
 
-            } else if (va.registeredNum >= maxValidators && regP[msg.sender] >= processedId) {
-                (,prevVal,,,,,,,) = queue.get( regP[msg.sender] ); 
-                uint256 head = queue.head();
 
-                if (head > prevVal)
-                    prevVal = head;
-                    
-                setPos(prevVal);
+            // if (valHash != 0x0 && regP[msg.sender] < processedId) {
 
-            }  else {
-                valHash = 0x0;
-            }
+            //     valHash = setPos(processedId, valHash);
+
+            // } else if (va.registeredNum >= maxValidators  || valHash == 0x0 || processedId <= regP[msg.sender]) {
+
+            //     if(regP[msg.sender] >= processedId)
+            //         (,prevVal,,,,,,,) = queue.get( regP[msg.sender] ); 
+            //     else 
+            //         (,prevVal,,,,,,,) = queue.get( processedId ); 
+
+
+            // if (head > prevVal && head != processedId)
+            //             prevVal = head;
+
+                    // if (prevVal == 0 )   
+                    //     valHash = 0x0;
+                    // else 
+                    //     valHash = setPos(prevVal);
+                    bool done;
+                    // if (valHash != 0x0)
+                        while (!done){
+
+                            uint256 tail = queue.findTailId();
+                            // uint256 head = queue.head();
+                           
+                            // if (( regP[msg.sender] == prevVal) )
+                            //     prevVal++;
+                            
+                            // else{
+                                done = setPos(prevVal, valHash);
+                                // if (done)
+                                (,,,valHash,,,,,) =  queue.get(prevVal);
+                                // else
+                                //     valHash = 0x0;
+
+                                 if ( prevVal == tail)
+                                    done = true;
+
+                                prevVal++;
+                            // }
+
+                           
+                        }
+
+            // }  else {
+            //     valHash = 0x0;
+            // }
 
         } else if (  reg[msg.sender] > 0){
                 (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
                 if (valHash == 0x0)
                     reg[msg.sender]= 0;
 
-            } 
+        } 
 
         emit ValRegistered(msg.sender, valHash);
     }
+
+   
+
+function collectValidationResults(bytes32 validationHash)
+        public
+        view
+        returns (
+            address[] memory,
+            uint256[] memory,
+            uint256[] memory,
+            uint256[] memory,
+            string[] memory,
+            bytes32[] memory
+        )
+    {
+        uint256 j = 0;
+        Validation storage validation = validations[validationHash];
+
+        address[] memory validatorsList = returnValidatorList();
+        address[] memory validatorListActive = new address[](validation.validationsCompleted);
+        uint256[] memory stake = new uint256[](validation.validationsCompleted);
+        uint256[] memory validatorsValues = new uint256[](validation.validationsCompleted);
+        uint256[] memory validationTime = new uint256[](validation.validationsCompleted);
+        string[] memory validationUrl = new string[](validation.validationsCompleted);
+        bytes32[] memory reportHash = new bytes32[](validation.validationsCompleted);
+
+        for (uint256 i = 0; i < validatorsList.length; i++) {
+            if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
+
+                stake[j] = memberHelpers.returnDepositAmount(validatorsList[i]);
+                validatorsValues[j] = uint256(validation.validatorChoice[validatorsList[i]]);
+                validationTime[j] = validation.validatorTime[validatorsList[i]];
+                validationUrl[j] = validation.validationUrl[validatorsList[i]];
+                validatorListActive[j] = validatorsList[i];
+                reportHash[j] = validation.validationHash[validatorsList[i]];
+                j++;
+            }
+        }
+        return (
+            validatorListActive, stake, validatorsValues, validationTime, validationUrl, reportHash
+        );
+    }
+
      
 }
