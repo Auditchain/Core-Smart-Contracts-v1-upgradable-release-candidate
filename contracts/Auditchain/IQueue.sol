@@ -13,4 +13,6 @@ interface IQueue {
     function findPrevId(uint256 _id) external view returns (uint256);
     function findIdForValidationHash(bytes32 _validationHash)external view returns (uint256);
     function head() external view returns (uint256);
+    function findTailId() external view returns (uint256);
+
 }
