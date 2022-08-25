@@ -101,9 +101,9 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
      */
   function initValNoCohort(bytes32 docHash, string memory url, bool isCohort, uint256 price) external  {
 
-        // require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
-        // require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
-        // require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
+        require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
+        require(checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
+        require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
@@ -179,55 +179,6 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
     }
 
-    /**
-     *@dev returns list of active validators
-     *@return list of addresses 
-     */
-    // function returnValidatorListActual(bytes32 validationHash) external view returns (address[] memory) {
-
-    //     require(validationHash != bytes32(0), "VNC:returnValidatorListActual - invalid hash");
-
-    //     Validation storage validation = validations[validationHash];
-    //     uint256 j = 0;
-
-    //     address[] memory validatorListActive = new address[](validation.validationsCompleted);
-    //     address[] memory validatorsList = nodeOperations.returnNodeOperators();
-
-    //     for (uint256 i = 0; i < validatorsList.length; i++) {
-    //         if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
-    //             validatorListActive[j] = validatorsList[i];
-    //             j++;
-    //         }
-    //     }
-    //     return validatorListActive;
-    // }
-
-    // /**
-    //  * @dev get validation results
-    //  * @param validationHash - consist of hash of hashed document and timestamp
-    //  * @return valList -  array  of validators
-    //  * @return stake - array of stakes of each validator
-    //  * @return choice - array of validation choices for each validator
-    //  * @return time - array of validation times for each validator
-    //  * @return url - array of validation url for each validator
-    //  * @return hash - array of validation hashes for each validator
-    //  */
-    
-
-    //  function collectValidationResults(bytes32 validationHash) public view  returns (
-    //             address[] memory valList ,
-    //             uint256[] memory stake,
-    //             uint256[] memory choice,
-    //             uint256[] memory time,
-    //             string[] memory url,
-    //             bytes32[] memory hash
-    //     ) {
-
-    //     Validation storage validation = validations[validationHash];
-
-    //     (valList, stake, choice, time, url, hash) = validationHelpers.collectValidationResults(address(this) );
-    //     return (valList, stake, choice, time, url, hash);
-    // }
 
     /**
      * @dev validators can check if specific document has been already validated by them
@@ -364,95 +315,50 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
     function setPos(uint256 prevVal, bytes32 valHash) internal returns (bool){
 
             Validation storage va = validations[valHash];
+           
+            if (va.registeredNum <=  maxValidators && regP[msg.sender] != prevVal && valHash != 0x0 ){
 
-            if (va.registeredNum <  maxValidators && regP[msg.sender] != prevVal ){
+                if (va.registeredNum  == 0)
+                    processedId = prevVal;
 
                 va.registeredNum ++;
-
                 reg[msg.sender] = prevVal;
                 regP[msg.sender] = prevVal;
-                (,prevVal ,,,,,,,) = queue.get(processedId); 
 
-                if (prevVal !=0 && va.registeredNum == maxValidators)
-                    processedId = prevVal;
-                
                 return true;
-
             } else {
                 return false;
             }
     }
-    function registerValidation() external {
 
-       bytes32 valHash;
-       uint256 prevVal;
+    function registerValidation() external nonReentrant {
 
+        bytes32 valHash;
+        uint256 prevVal;
 
-       if (  queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
+        if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
+
+            // uint256 head = queue.head();
+
+            // if(head > processedId )
+            //     prevVal = head;
+            // else
+            //     prevVal = processedId;
 
             (,,,valHash,,,,,) =  queue.get(processedId);
-            prevVal = processedId;
+            uint256 tail = queue.findTailId();
 
-            // Validation storage va = validations[valHash];
-
-
-
-            // if (valHash != 0x0 && regP[msg.sender] < processedId) {
-
-            //     valHash = setPos(processedId, valHash);
-
-            // } else if (va.registeredNum >= maxValidators  || valHash == 0x0 || processedId <= regP[msg.sender]) {
-
-            //     if(regP[msg.sender] >= processedId)
-            //         (,prevVal,,,,,,,) = queue.get( regP[msg.sender] ); 
-            //     else 
-            //         (,prevVal,,,,,,,) = queue.get( processedId ); 
-
-
-            // if (head > prevVal && head != processedId)
-            //             prevVal = head;
-
-                    // if (prevVal == 0 )   
-                    //     valHash = 0x0;
-                    // else 
-                    //     valHash = setPos(prevVal);
-                    bool done;
-                    // if (valHash != 0x0)
-                        while (!done){
-
-                            uint256 tail = queue.findTailId();
-                            // uint256 head = queue.head();
-                           
-                            // if (( regP[msg.sender] == prevVal) )
-                            //     prevVal++;
-                            
-                            // else{
-                                done = setPos(prevVal, valHash);
-                                // if (done)
-                                (,,,valHash,,,,,) =  queue.get(prevVal);
-                                // else
-                                //     valHash = 0x0;
-
-                                 if ( prevVal == tail)
-                                    done = true;
-
-                                prevVal++;
-                            // }
-
-                           
-                        }
-
-            // }  else {
-            //     valHash = 0x0;
-            // }
+            if (!setPos(processedId, valHash) && processedId != tail){
+                (,prevVal ,,,,,,,) = queue.get(processedId); 
+                (,,,valHash,,,,,) =  queue.get(prevVal);
+                setPos(prevVal, valHash);
+            }
 
         } else if (  reg[msg.sender] > 0){
                 (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
                 if (valHash == 0x0)
                     reg[msg.sender]= 0;
-
         } 
-
         emit ValRegistered(msg.sender, valHash);
     }
 
