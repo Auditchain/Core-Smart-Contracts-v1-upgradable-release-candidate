@@ -312,8 +312,6 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         minus = validation.winnerVotesMinus[user];
     }
 
-<<<<<<< HEAD
-
     function registerValidation() public nonReentrant returns(bytes32 valHash){
 
         bool done;
@@ -353,54 +351,6 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
             if (valHash == 0x0)
                 reg[msg.sender]= 0;
-=======
-    function setPos(uint256 prevVal, bytes32 valHash) internal returns (bool){
-
-            Validation storage va = validations[valHash];
-           
-            if (va.registeredNum <=  maxValidators && regP[msg.sender] != prevVal && valHash != 0x0 ){
-
-                if (va.registeredNum  == 0)
-                    processedId = prevVal;
-
-                va.registeredNum ++;
-                reg[msg.sender] = prevVal;
-                regP[msg.sender] = prevVal;
-
-                return true;
-            } else {
-                return false;
-            }
-    }
-
-    function registerValidation() external nonReentrant {
-
-        bytes32 valHash;
-        uint256 prevVal;
-
-        if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
-
-            // uint256 head = queue.head();
-
-            // if(head > processedId )
-            //     prevVal = head;
-            // else
-            //     prevVal = processedId;
-
-            (,,,valHash,,,,,) =  queue.get(processedId);
-            uint256 tail = queue.findTailId();
-
-            if (!setPos(processedId, valHash) && processedId != tail){
-                (,prevVal ,,,,,,,) = queue.get(processedId); 
-                (,,,valHash,,,,,) =  queue.get(prevVal);
-                setPos(prevVal, valHash);
-            }
-
-        } else if (  reg[msg.sender] > 0){
-                (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
-                if (valHash == 0x0)
-                    reg[msg.sender]= 0;
->>>>>>> 922b5299219797626aaa44bfc9d06159e4a66297
         } 
         emit ValRegistered(msg.sender, valHash);
     }
