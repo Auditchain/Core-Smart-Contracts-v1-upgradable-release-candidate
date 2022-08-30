@@ -37,7 +37,7 @@ module.exports = {
       host: "localhost",
       port: 8545,
       // gas: 6721975,
-      gas: 10000000,
+      gas: 20000000,
       gasPrice: 1000000000,
       network_id: "*", // Match any network id
       accounts: 10,
@@ -97,6 +97,7 @@ module.exports = {
       confirmations: 1,
       timeoutBlocks: 200,
       skipDryRun: true,
+      gasPrice: 31000000000,
     },
     polygon: {
       provider: () => new HDWalletProvider(MNEMONIC, "https://polygon-mainnet.infura.io/v3/5250187d69d747f392fcf1d32bbbc64a"),

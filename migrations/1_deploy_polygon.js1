@@ -22,6 +22,9 @@ const { upgradeProxy, deployProxy } = require('@openzeppelin/truffle-upgrades');
 
 module.exports = async function (deployer, network, accounts) { // eslint-disable-line..
 
+  let auditTokenMin = "5000000000000000000000";
+
+
   let admin = accounts[0];   // 0
 
 
@@ -142,6 +145,8 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let gov = await GovernorAlpha.deployed();
 
   // env format
+  console.log("\n\n" + "Env format:" + "\n\n");
+
   console.log('AUDT_TOKEN_ADDRESS=' + token.address);
   console.log('MEMBER_ADDRESS=' + members.address);
   console.log('MEMBER_HELPERS_ADDRESS=' + memberHelpers.address);
@@ -219,6 +224,9 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
 
   await queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });')
+
+  await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
+  console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
 
   await validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
@@ -363,6 +371,26 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await token.transfer(validator14, validatorTokenAmount, { from: admin });
   await token.transfer(validator15, validatorTokenAmount, { from: admin });
   await token.transfer(validator16, validatorTokenAmount, { from: admin });
+
+  await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
+  await token.approve(memberHelpers.address, auditTokenMin, { from: validator2 });
+  await token.approve(memberHelpers.address, auditTokenMin, { from: validator3 });
+  await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
+  await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber1 });
+
+  await memberHelpers.stake(auditTokenMin, { from: validator1 });
+  await memberHelpers.stake(auditTokenMin, { from: validator2 });
+  await memberHelpers.stake(auditTokenMin, { from: validator3 });
+  await memberHelpers.stake(auditTokenMin, { from: validator4 });
+
+  // await memberHelpers.stake(auditTokenMin, { from: validator4 });
+  await memberHelpers.stake(auditTokenMin, { from: dataSubscriber1 });
+
+  await nodeOperations.toggleNodeOperator({ from: validator1 });
+  await nodeOperations.toggleNodeOperator({ from: validator2 });
+  await nodeOperations.toggleNodeOperator({ from: validator3 });
+  await nodeOperations.toggleNodeOperator({ from: validator4 });
+
 
 
   console.log("FINISHED");
