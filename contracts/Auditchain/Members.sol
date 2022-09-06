@@ -30,6 +30,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
     uint256 public enterpriseMatch;         
     uint256 public minDepositDays;
     uint256 public requiredQuorum;             // quorum required to consider validation valid
+    uint256 public maxValidators;
 
      // Audit types to be used. Two types added for future expansion 
     mapping(address => mapping(UserType => string)) public user;
@@ -73,10 +74,21 @@ contract Members is  AccessControlEnumerableUpgradeable {
         enterpriseMatch = 200;       
         minDepositDays = 30;
         requiredQuorum = 80;
+        maxValidators = 2;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
    
+
+     /**
+     * @dev to be called by governance to update new amount for max validators
+     * @param _maxValidator new value of required quorum
+     */
+    function updateMaxValidator(uint256 _maxValidator) external isSetter() {
+        require(_maxValidator != 0, "Members:updateMaxValidator - Max validator value can't be 0");
+        maxValidators = _maxValidator;
+        LogGovernanceUpdate(maxValidators, "updateMaxValidator");
+    }
      
     /**
      * @dev to be called by governance to update new amount for required quorum
