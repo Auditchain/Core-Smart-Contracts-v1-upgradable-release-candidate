@@ -40,7 +40,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
         bytes32 validationHash = keccak256(abi.encodePacked(documentHash, _validationTime));
 
-        (,,uint validationTime,,,,,,,) = IValidations(msg.sender).returnValidationRecord(validationHash);
+        (,,uint validationTime,,,,,,,,) = IValidations(msg.sender).validations(validationHash);
         if (validationTime == _validationTime)
             return true;
         else
@@ -54,7 +54,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
 
-        (,,validationTime,,,,,,,winner) = IValidations(validationContract).returnValidationRecord(validationHash);
+        (,,validationTime,,,,,,,winner,) = IValidations(validationContract).validations(validationHash);
         valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
 
         return (valUrl, winner, validationTime);
@@ -72,7 +72,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
         require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
 
-        (,address requestor,,,,,,,,) = IValidations(validationContract).returnValidationRecord(validationHash);
+        (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
 
         require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
         if (price == 0)
