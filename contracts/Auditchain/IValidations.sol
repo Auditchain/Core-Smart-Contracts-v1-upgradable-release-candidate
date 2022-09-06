@@ -26,7 +26,7 @@ interface IValidations {
             bytes32[] memory
         );
 
-    function returnValidationRecord(bytes32 validationHash) external  view
+    function validations(bytes32 validationHash) external  view
         returns( bool cohort,
                 address requestor,
                 uint256 validationTime,
@@ -36,6 +36,7 @@ interface IValidations {
                 uint256 validationsCompleted,
                 uint64 winnerConfirmations,
                 bool paymentSent,
-                address winner);
+                address winner,
+                uint256 price);
 
 }
