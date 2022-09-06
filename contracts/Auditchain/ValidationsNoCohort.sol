@@ -52,8 +52,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
 
     mapping(bytes32 => Validation) public validations; // track each validation
-    uint256 public maxValidators;
-    uint256 public processedId;
+   
 
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
@@ -79,8 +78,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
         nodeOperations = INodeOperations(_nodeOperations);
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
-        maxValidators = 2;
-        processedId = 1;
+     
     }
 
     /**
@@ -147,7 +145,7 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
         validation.winnerConfirmations++;
       
-        if (validation.winnerConfirmations >= maxValidators && validation.winner == address(0)) {
+        if (validation.winnerConfirmations >= members.maxValidators() && validation.winner == address(0)) {
             address winner = validationHelpers.selectWinner(validationHash, winners);
             validation.winner = winner;
             processPayments(validationHash, winner);
@@ -264,40 +262,13 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
 
         emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
 
-        if (validation.validationsCompleted >= maxValidators && validation.executionTime == 0) 
+        if (validation.validationsCompleted >= members.maxValidators() && validation.executionTime == 0) 
             executeValidation(valHash, docHash);
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
         assert(nodeOperations.increaseDelegatedStakeRewards(msg.sender));
     }
 
-    function returnValidationRecord(bytes32 validationHash) external view 
-    returns (
-            bool cohort,
-            address requestor,
-            uint256 validationTime,
-            uint256 executionTime,
-            string memory url,
-            uint256 consensus,
-            uint256 validationsCompleted,
-            uint64 winnerConfirmations,
-            bool paymentSent,
-            address winner
-        )
-    {
-        Validation storage validation = validations[validationHash];
-
-        cohort = validation.cohort;
-        requestor = validation.requestor;
-        validationTime = validation.validationTime;
-        executionTime = validation.executionTime;
-        url = validation.url;
-        consensus = validation.consensus;
-        validationsCompleted = validation.validationsCompleted;
-        winnerConfirmations = validation.winnerConfirmations;
-        winner = validation.winner;
-        paymentSent = winner != address(0);
-    }
 
     function returnValidationUrl(bytes32 validationHash, address user) external view returns (string memory url){
 
@@ -324,14 +295,11 @@ contract ValidationsNoCohort is ReentrancyGuardUpgradeable {
             while(!done){
                 Validation storage val = validations[valHash];
 
-                if (val.regNum > maxValidators  ){
+                if (val.regNum > members.maxValidators()  ){
 
                     (,prevVal ,,,,,,,) = queue.get(prevVal); 
                     (,,,valHash,,,,,) =  queue.get(prevVal);
-                } else if (val.regNum <= maxValidators && valHash != 0x0 && regP[msg.sender] != prevVal) {
-
-                    if (val.regNum  == 0)
-                        processedId = prevVal;
+                } else if (val.regNum <= members.maxValidators() && valHash != 0x0 && regP[msg.sender] != prevVal) {
 
                     val.regNum ++;
                     reg[msg.sender] = prevVal;
