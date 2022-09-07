@@ -20,7 +20,6 @@ contract Members is  AccessControlEnumerableUpgradeable {
     IAuditToken public auditToken;                       //AUDT token 
     mapping(address => uint256) public deposits;        //track deposits per user
     mapping(address => mapping(address => bool)) public dataSubscriberCohortMap;
-    uint256 public amountTokensPerValidation ;    //New minted amount per validation
 
     uint256 public accessFee;
     uint256 public enterpriseShareSubscriber;
@@ -31,6 +30,8 @@ contract Members is  AccessControlEnumerableUpgradeable {
     uint256 public minDepositDays;
     uint256 public requiredQuorum;             // quorum required to consider validation valid
     uint256 public maxValidators;
+    uint256 public minContribution;
+
 
      // Audit types to be used. Two types added for future expansion 
     mapping(address => mapping(UserType => string)) public user;
@@ -66,7 +67,6 @@ contract Members is  AccessControlEnumerableUpgradeable {
         require(_platformAddress != address(0), "Members:constructor - Platform address can't be 0");
         auditToken = IAuditToken(_auditToken);        
         platformAddress = _platformAddress;
-        amountTokensPerValidation =  1e18;  
         accessFee = 1000e18;
         enterpriseShareSubscriber = 40;
         validatorShareSubscriber = 40;
@@ -75,10 +75,21 @@ contract Members is  AccessControlEnumerableUpgradeable {
         minDepositDays = 30;
         requiredQuorum = 80;
         maxValidators = 2;
+        minContribution = 5e21;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
    
+       /**
+     * @dev to be called by governance to update new amount for min contribution/stake
+     * @param _minContribution new value of required min contribution
+     */
+    function updateMinContribution(uint256 _minContribution) external isSetter() {
+        require(_minContribution != 0, "Members:updateMinContribution - Min contribution can't be 0");
+        minContribution = _minContribution;
+        LogGovernanceUpdate(maxValidators, "updateMinContribution");
+    }
+     
 
      /**
      * @dev to be called by governance to update new amount for max validators
@@ -137,19 +148,6 @@ contract Members is  AccessControlEnumerableUpgradeable {
     }
 
 
-    /**
-    * @dev to be called by Governance contract to update new amount for validation rewards
-    * @param _amountTokensPerValidation new value of reward per validation
-    */
-    function updateTokensPerValidation(uint256 _amountTokensPerValidation) external isSetter() {
-
-        require(_amountTokensPerValidation != 0, "Members:updateTokensPerValidation - New value for the reward can't be 0");
-        amountTokensPerValidation = _amountTokensPerValidation;
-        emit LogGovernanceUpdate(_amountTokensPerValidation, "updateRewards");
-
-    }
-
-    
     /**
     * @dev to be called by Governance contract
     * @param _enterpriseMatch new value of enterprise portion of enterprise value of validation cost
