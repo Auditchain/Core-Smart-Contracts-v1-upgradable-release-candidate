@@ -9,6 +9,6 @@ interface IMembers {
     function enterpriseMatch() external returns (uint256);
     function amountTokensPerValidation() external returns (uint256);
     function maxValidators() external returns (uint256);
-
+    function minContribution() external returns (uint256);
 
 }
