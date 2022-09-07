@@ -177,7 +177,7 @@ contract NodeOperations is AccessControl {
             emit LogNodeOperatorToggled(msg.sender, "OFF");
         }
         else{
-            require(memberHelpers.returnDepositAmount(msg.sender) >= memberHelpers.minContribution(), 
+            require(memberHelpers.returnDepositAmount(msg.sender) >= members.minContribution(), 
                                                                     "NO:toggleNodeOperator - Minimum stake amount not met.");
             nodeOpStruct[msg.sender].isNodeOperator = true;
             nodeOperators.push(msg.sender);
