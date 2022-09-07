@@ -20,7 +20,6 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     Members public members; // Members contract
     IValidations public validations; // Validation interface
     mapping(address => uint256) public deposits; //track deposits per user
-    uint256 public minContribution;
     uint256 public totalStaked;
     
 
@@ -31,8 +30,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
 
     function initialize(address _members, address _auditToken) external {
         require(_members != address(0),"MemberHelpers:constructor - Member address can't be 0");
-        require(_auditToken != address(0), "MemberHelpers:setCohort - Cohort address can't be 0");
-        minContribution = 5e21;
+        require(_auditToken != address(0), "MemberHelpers:setCohort - Token address can't be 0");
         members = Members(_members);
         auditToken = _auditToken;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -82,7 +80,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         require(amount > 0, "MH:stake - Amount can't be 0");
 
         if (members.userMap(msg.sender, Members.UserType(1))) {
-            require(amount + deposits[msg.sender] >= minContribution, "MH:stake - Minimum contribution amount is 5000 AUDT");
+            require(amount + deposits[msg.sender] >= members.minContribution(), "MH:stake - Minimum contribution amount is 5000 AUDT");
            
         }
         require(members.userMap(msg.sender, Members.UserType(0)) ||
