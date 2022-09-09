@@ -23,7 +23,6 @@ contract("Member Helper contract", (accounts) => {
     let members;
     let token;
     let memberHelpers;
-    let validationHelpers
     let validation;
     let nodeOperations;
     let queue;
@@ -33,7 +32,6 @@ contract("Member Helper contract", (accounts) => {
     let auditTokenLesMin = "1";
     let initialToken = "2500000000000000000000000000";
 
-    let tokenPerValidation;
     CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
     let MINTER_ROLE = web3.utils.keccak256("MINTER_ROLE");
 
@@ -51,7 +49,6 @@ contract("Member Helper contract", (accounts) => {
         await token.mint(admin, initialToken, { from: admin });
 
         await token.grantRole(MINTER_ROLE, memberHelpers.address, { from: admin });
-        tokenPerValidation = await members.amountTokensPerValidation();
 
         await token.grantRole(MINTER_ROLE, admin, { from: admin });
         await token.mint(admin, initialToken, { from: admin });
@@ -165,6 +162,30 @@ contract("Member Helper contract", (accounts) => {
         it("Should fail. User hasn't been registered as enterprise.", async () => {
             try {
                 result = await memberHelpers.stake(auditTokenMin, { from: admin });
+                expectRevert()
+            } catch (error) {
+                ensureException(error);
+            }
+        })
+    })
+
+
+    describe("Redeem", async () => {
+
+        it("Should succeed. Data subscriber redeems their deposit", async () => {
+
+            let result = await memberHelpers.redeem(auditTokenLesMin, { from: validator1 });
+            assert.lengthOf(result.logs, 1);
+
+            let event = result.logs[0];
+            assert.equal(event.event, 'LogDepositRedeemed');
+            assert.strictEqual(event.args.from, validator1);
+            assert.strictEqual(event.args.amount.toString(), auditTokenLesMin);
+        })
+
+        it("Should fail. Data subscriber tried to withdraw more than available.", async () => {
+            try {
+                result = await memberHelpers.redeem(auditTokenMin, { from: validator1 });
                 expectRevert()
             } catch (error) {
                 ensureException(error);
