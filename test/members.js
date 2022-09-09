@@ -128,19 +128,21 @@ contract("Member contract", (accounts) => {
         })
 
 
-        it("It should succeed. Reward per validation was updated by authorized user.", async () => {
+
+
+        it("It should succeed. updateMinContribution was updated by authorized user.", async () => {
 
             await members.grantRole(SETTER_ROLE, admin, { from: admin });
-            await members.updateTokensPerValidation(auditTokenMin, { from: admin });
-            let newReward = await members.amountTokensPerValidation();
-            assert.strictEqual(newReward.toString(), auditTokenMin.toString());
+            await members.updateMinContribution(auditTokenMin, { from: admin });
+            let newMinContributors = await members.minContribution();
+            assert.strictEqual(newMinContributors.toString(), auditTokenMin.toString());
         })
 
 
-        it("It should fail. Reward per validation was updated by unauthorized user.", async () => {
+        it("It should fail. updateMinContribution was updated by unauthorized user.", async () => {
 
             try {
-                await members.updateTokensPerValidation(auditTokenMin, { from: enterprise1 });
+                await members.updateMinContribution(auditTokenMin, { from: enterprise1 });
                 expectRevert();
             }
             catch (error) {
@@ -148,10 +150,44 @@ contract("Member contract", (accounts) => {
             }
         })
 
-        it("It should fail. Reward per validation was updated by authorized user with value of 0", async () => {
+        it("It should fail. updateMinContribution was updated by authorized user with value of 0", async () => {
 
             try {
-                await members.updateTokensPerValidation("0", { from: admin });
+                await members.updateMinContribution("0", { from: admin });
+                expectRevert();
+            }
+            catch (error) {
+                ensureException(error);
+            }
+        })
+
+
+
+
+        it("It should succeed. updateMaxValidator was updated by authorized user.", async () => {
+
+            await members.grantRole(SETTER_ROLE, admin, { from: admin });
+            await members.updateMaxValidator(auditTokenMin, { from: admin });
+            let newMinContribution = await members.minContribution();
+            assert.strictEqual(newMinContribution.toString(), auditTokenMin.toString());
+        })
+
+
+        it("It should fail. updateMaxValidator was updated by unauthorized user.", async () => {
+
+            try {
+                await members.updateMaxValidator(auditTokenMin, { from: enterprise1 });
+                expectRevert();
+            }
+            catch (error) {
+                ensureException(error);
+            }
+        })
+
+        it("It should fail. updateMaxValidator was updated by authorized user with value of 0", async () => {
+
+            try {
+                await members.updateMaxValidator("0", { from: admin });
                 expectRevert();
             }
             catch (error) {
