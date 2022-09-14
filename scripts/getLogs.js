@@ -236,7 +236,7 @@ async function LogStakingRewardsClaimed(filter) {
 
     try {
         const result = await nodeOperations.getPastEvents('LogStakingRewardsClaimed', {
-            filter: { validator: filter },
+            filter: { user: filter },
             fromBlock: 0,
             toBlock: 'latest'
         });
@@ -343,38 +343,14 @@ async function ValidatorValidatedDocumentHash(filter) {
 
 async function ValidationInitialized(filter) {
 
-    const Web3 = require('web3');
-
-   
-    const web3 = new Web3('https://polygon-mumbai.g.alchemy.com/v2/H2g1siLIwqCBQMIY052r_vJAejQ_A_V3');
-
-    const loader = setupLoader({ provider: web3 }).web3;
-
-
-    const noCohortAddress = "0xD76F814EF26193B76F194E19A211B377827A4Ffe";
-    const noCohort = loader.fromArtifact("ValidationsNoCohort", noCohortAddress);
-
-
-    // noCohort.getPastEvents('ValidationInitialized', {
-    //     fromBlock: 0,
-    //     toBlock: 'latest'
-    // }, function (error, events) { console.log("events no cohort", events); });
-
-
-    // noCohort.getPastEvents('ValidationInitialized', {
-    //     fromBlock: 0,
-    //     toBlock: 'latest'
-    // }, function (error, events) { console.log("events no cohort", events); });
-
     try {
         const result = await noCohort.getPastEvents('ValidationInitialized', {
-            // filter: { user: filter },
+            filter: { user: filter },
             fromBlock:
                 0,
             toBlock: 'latest'
         });
 
-        console.log("result:", result);
         return result;
     } catch (err) {
         console.log(err);
@@ -383,61 +359,6 @@ async function ValidationInitialized(filter) {
 }
 
 
-async function ValidationInitializedEthers(filter) {
-
-    const ethersProvider = new ethers.providers.Web3Provider(provider);
-
-
-    // proxy_contract = web3.eth.Contract(noCohortAddress, NO_COHORT["abi"])
-    // let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
-    // console.log(noCohort)
-
-    // let implementation_contract_address = noCohort.functions.implementation.call();
-
-    // console.log("implementation:", implementation_contract_address);
-
-
-    //    const  impl_contract = Web3.toHex(
-    //         web3.eth.get_storage_at(
-    //             contract_address,
-    //             "0x58FF4dFd60F293d9fBf9B8fAd5c70919BE2A51ff",
-    //         )
-    //     )
-    //     print(impl_contract)
-
-
-    const signer = await ethersProvider.getSigner();
-    // console.log("signer:", signer);
-    const noCohort = new ethers.Contract(noCohortAddress, NO_COHORT["abi"], ethersProvider);
-
-    // console.log(noCohort);
-
-    // let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
-
-    // const filterValidation = noCohortContract.filters.ValidatorValidated(validator); 
-    // const validations = await noCohortContract.queryFilter(filterValidation, startingBlockNumber, 'latest');
-
-    try {
-        // const isNodeOperator = await noCohort.checkIfRequestorHasFunds(filter);
-        // console.log("is node operator:", isNodeOperator);
-
-        const filterNoCohort = noCohort.filters.ValidationInitialized(null, null, null);
-        // console.log("filterNoCohort", filterNoCohort);
-        const cohortCreatedEvents = await noCohort.queryFilter(filterNoCohort, 0, 'latest');
-        //     const result = await noCohort.getPastEvents('ValidationInitialized', {
-        //         filter: { user: filter },
-        //         fromBlock: 0,
-        //         toBlock: 'latest'
-        //     });
-
-        console.log("events:", cohortCreatedEvents)
-
-        return cohortCreatedEvents;
-    } catch (err) {
-        console.log(err);
-    }
-
-}
 
 
 async function ValidationInitialized2filters(filter1, filter2) {
