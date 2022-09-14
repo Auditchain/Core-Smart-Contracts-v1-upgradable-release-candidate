@@ -186,17 +186,6 @@ contract("NoCohort Validations contract", (accounts) => {
 
         })
 
-
-
-
-
-
-
-
-
-       
-
-
         it("Should succeed. Validation executed by all validators should result in total award equal payment fee for one validation", async () => {
 
 
@@ -320,7 +309,7 @@ contract("NoCohort Validations contract", (accounts) => {
 
 
     describe("Register for validation", async () => {
-        let count;
+        let count=1000;
         let validationInitTime;
         let validationHash;
 
@@ -337,22 +326,20 @@ contract("NoCohort Validations contract", (accounts) => {
             let event = result.logs[0];
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
-            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
-            await validation.registerValidation({ from: validator2 });
-
+            validationHash = event.args.validationHash;
 
         })
 
         it("It should succeed. The return value should be non zero hash", async () => {
 
-            let result = await validation.registerValidation({ from: validator2 });
+            let result = await validation.registerValidation({ from: validator1 });
             
 
             let event = result.logs[0];
             assert.equal(event.event, 'ValRegistered');
 
             assert.strictEqual(validationHash, event.args.valHash);
-            assert.strictEqual(validator2, event.args.validator);
+            assert.strictEqual(validator1, event.args.validator);
             await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
 
         })
@@ -386,7 +373,7 @@ contract("NoCohort Validations contract", (accounts) => {
 
         let validationInitTime;
         let validationHash
-        let count=0;
+        let count=1;
         let documentHash
 
         beforeEach(async () => {
