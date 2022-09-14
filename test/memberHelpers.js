@@ -25,6 +25,7 @@ contract("Member Helper contract", (accounts) => {
     let memberHelpers;
     let validation;
     let nodeOperations;
+    let validationHelpers;
     let queue;
     let CONTROLLER_ROLE;
 

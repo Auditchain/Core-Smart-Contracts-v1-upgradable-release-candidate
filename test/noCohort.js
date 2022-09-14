@@ -48,6 +48,8 @@ contract("NoCohort Validations contract", (accounts) => {
     const tokenAmount3 = "10000000000000000000000000";
     const tokenAmount4 = "44443332220000000000000000";
     const tokenAmount5 = "14443332220000000000000000";
+    const zeroTransaction = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
 
 
     before(async () => {
@@ -101,6 +103,8 @@ contract("NoCohort Validations contract", (accounts) => {
         await memberHelpers.grantRole(CONTROLLER_ROLE, validation.address, { from: admin });
         await queue.grantRole(CONTROLLER_ROLE, validation.address, { from: admin });
         await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
+        await queue.grantRole(CONTROLLER_ROLE, admin, { from: admin });
+
 
     })
 
@@ -164,60 +168,67 @@ contract("NoCohort Validations contract", (accounts) => {
     describe("Validate document", async () => {
 
         let validationInitTime;
+        let valHash;
+        let count;
+        let documentHash;
 
         beforeEach(async () => {
+
+            documentHash = web3.utils.soliditySha3(documentURL + count);
 
             let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
             let event = result.logs[0]
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
+            valHash = event.args.validationHash;
+            await validation.registerValidation({ from: validator1 });
+            count++;
 
         })
 
-        it("Should succeed. Validation executed by proper validator and proper values are passed", async () => {
-
-            let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
 
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidatorValidated');
-
-            assert.strictEqual(event.args.decision.toString(), "1");
-            assert.strictEqual(event.args.documentHash, documentHash);
-        })
-
-        it("Should fail. Validation attested by proper validator but improper document hash is sent.", async () => {
-
-            documentHash = web3.utils.soliditySha3("1");
-
-            try {
-                await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
-        })
 
 
-        it("Should fail. Validation attested by proper validator but improper validation time is sent.", async () => {
-
-            try {
-                await validation.validate(documentHash, 1, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
-        })
 
 
-        it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
 
-            try {
-                await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: dataSubscriber, gas: 900000 });
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
+
+       
+
+
+        it("Should succeed. Validation executed by all validators should result in total award equal payment fee for one validation", async () => {
+
+
+            let depositAmountBefore3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
+            let depositAmountBefore2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
+            // let depositAmountBefore3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
+            // let depositAmountBefore4 = (await nodeOperations.nodeOpStruct(validator4)).POWAmount;
+
+            let reg1 = await validation.registerValidation({ from: validator3 });
+            let reg2 = await validation.registerValidation({ from: validator2 });
+            // await validation.registerValidation({from:validator3});
+
+
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator2, gas: 900000 });
+            let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator3, gas: 900000 });
+            // await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator3, gas: 900000 });
+
+            let event = result.logs[1];
+            assert.equal(event.event, 'RequestExecuted');
+
+            await validation.voteWinner(event.args.winners, [true, true], event.args.validationHash, { from: validator3 });
+            await validation.voteWinner(event.args.winners, [true, true], event.args.validationHash, { from: validator2 });
+            // await validation.voteWinner(event.args.winners, [true, true], event.args.validationHash, { from: validator3 });
+
+            let depositAmountAfter3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
+            let depositAmountAfter2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
+
+            let earned3 = BN(depositAmountAfter3.toString()).minus(BN(depositAmountBefore3.toString()));
+            let earned2 = BN(depositAmountAfter2.toString()).minus(BN(depositAmountBefore2.toString()));
+
+            let total = BN(earned3.toString()).add(BN(earned2.toString()));
+            assert.strictEqual(total.toString(), price.toString());
 
         })
 
@@ -230,45 +241,144 @@ contract("NoCohort Validations contract", (accounts) => {
                 ensureException(error);
             }
 
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
         })
 
-        it("Should succeed. Validation executed by all validators should result in total award equal payment fee for one validation", async () => {
+        it("Should succeed. Validation executed by proper validator and proper values are passed", async () => {
 
 
-            let depositAmountBefore1 = (await nodeOperations.nodeOpStruct(validator1)).POWAmount;
-            let depositAmountBefore2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
-            let depositAmountBefore3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
-            let depositAmountBefore4 = (await nodeOperations.nodeOpStruct(validator4)).POWAmount;
-
+            // await validation.registerValidation({ from: validator1 });
             let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator2, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator3, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator4, gas: 900000 });
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValidatorValidated');
 
+            assert.strictEqual(event.args.decision.toString(), "1");
+            assert.strictEqual(event.args.documentHash, documentHash);
 
-            let event = result.logs[1];
-            assert.equal(event.event, 'RequestExecuted');
-
-
-            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator1 });
-            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator2 });
-            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator3 });
-            await validation.voteWinner(event.args.winners, [true], event.args.validationHash, { from: validator4 });
-
-            let depositAmountAfter1 = (await nodeOperations.nodeOpStruct(validator1)).POWAmount;
-            let depositAmountAfter2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
-            let depositAmountAfter3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
-            let depositAmountAfter4 = (await nodeOperations.nodeOpStruct(validator4)).POWAmount;
-
-            let earned1 = BN(depositAmountAfter1.toString()).minus(BN(depositAmountBefore1.toString()));
-            let earned2 = BN(depositAmountAfter2.toString()).minus(BN(depositAmountBefore2.toString()));
-            let earned3 = BN(depositAmountAfter3.toString()).minus(BN(depositAmountBefore3.toString()));
-            let earned4 = BN(depositAmountAfter4.toString()).minus(BN(depositAmountBefore4.toString()));
-
-            let total = BN(earned1.toString()).add(BN(earned2.toString()).add(BN(earned3.toString()).add(BN(earned4.toString()))));
-            assert.strictEqual(total.toString(), price.toString());
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
 
         })
+
+        it("Should fail. Validation attested by proper validator but improper document hash is sent.", async () => {
+
+            documentHash = web3.utils.soliditySha3("1");
+
+            try {
+                await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
+
+        })
+
+        it("Should fail. Validation attested by proper validator but improper validation time is sent.", async () => {
+
+            try {
+                await validation.validate(documentHash, 1, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
+
+        })
+
+         it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
+
+            try {
+                await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: dataSubscriber, gas: 900000 });
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
+
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
+
+
+        })
+
+        it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
+
+            let reg1 = await validation.registerValidation({ from: dataSubscriber });
+
+
+            try {
+                await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: dataSubscriber, gas: 900000 });
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
+
+            await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
+
+
+        })
+
+    })
+
+
+    describe("Register for validation", async () => {
+        let count;
+        let validationInitTime;
+        let validationHash;
+
+    
+
+        beforeEach(async () => {
+
+
+
+            count++;
+            documentHash = web3.utils.soliditySha3(documentURL + count);
+            let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
+
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValidationInitialized');
+            validationInitTime = event.args.initTime;
+            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
+            await validation.registerValidation({ from: validator2 });
+
+
+        })
+
+        it("It should succeed. The return value should be non zero hash", async () => {
+
+            let result = await validation.registerValidation({ from: validator2 });
+            
+
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValRegistered');
+
+            assert.strictEqual(validationHash, event.args.valHash);
+            assert.strictEqual(validator2, event.args.validator);
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
+
+        })
+
+
+        it("It should succeed. The return value should be zero hash", async () => {
+
+            await validation.registerValidation({ from: validator3 });
+            await validation.registerValidation({ from: validator4 });
+            await validation.registerValidation({ from: validator2 });
+
+            let result = await validation.registerValidation({ from: validator1 });
+
+
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValRegistered');
+
+            assert.strictEqual(zeroTransaction, event.args.valHash);
+            assert.strictEqual(validator1, event.args.validator);
+
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
+
+        })
+
+
+
 
     })
 
@@ -278,9 +388,9 @@ contract("NoCohort Validations contract", (accounts) => {
         let validationHash
         let count=0;
         let documentHash
-        
+
         beforeEach(async () => {
-            
+
             count++;
             documentHash = web3.utils.soliditySha3(documentURL + count);
             let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
@@ -298,14 +408,14 @@ contract("NoCohort Validations contract", (accounts) => {
             await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
             let isValidated = await validation.isValidated(validationHash, { from: validator1 });
-            assert.strictEqual(isValidated.toString(), "1");
+            assert.strictEqual(isValidated[0].toString(), "1");
         })
 
         it("It should succeed. The return value should be false.", async () => {
 
             let isValidated = await validation.isValidated(validationHash, { from: validator1 });
 
-            assert.strictEqual(isValidated.toString(), "0");
+            assert.strictEqual(isValidated[0].toString(), "0");
         })
     })
 
@@ -357,9 +467,9 @@ contract("NoCohort Validations contract", (accounts) => {
 
         let count=10;
         let documentHash
-        
+
         beforeEach(async () => {
-            
+
             count++;  
             documentHash = web3.utils.soliditySha3(documentURL + count); // prevent same hash
             let result = await validation.initValNoCohort(documentHash, documentURL, 1, price, { from: dataSubscriber });
