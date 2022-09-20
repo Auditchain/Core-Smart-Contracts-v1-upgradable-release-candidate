@@ -1,7 +1,7 @@
 
 const Members = artifacts.require('./Members.sol');
 const Token = artifacts.require('./AuditToken.sol');
-const NoCohort = artifacts.require('./ValidationsNoCohort.sol');
+const Validations = artifacts.require('./Validations.sol');
 const ValidationHelpers = artifacts.require('./ValidationHelpers.sol');
 const MemberHelpers = artifacts.require('MemberHelpers.sol');
 const NFT = artifacts.require('./RulesERC721Token.sol');
@@ -129,12 +129,12 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let validationHelpers = await ValidationHelpers.deployed();
   console.log("validation helpers address:", validationHelpers.address);
 
-  await deployProxy(NoCohort, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address], { deployer, initializer: 'initialize' });
-  let noCohort = await NoCohort.deployed();
-  console.log("no cohort address:", noCohort.address);
+  await deployProxy(Validations, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address], { deployer, initializer: 'initialize' });
+  let validations = await Validations.deployed();
+  console.log("no cohort address:", validations.address);
 
 
-  await deployProxy(NFT, ["AuditChain", "Rules", noCohort.address], { deployer, initializer: 'initialize' });
+  await deployProxy(NFT, ["AuditChain", "Rules", validations.address], { deployer, initializer: 'initialize' });
   let nft = await NFT.deployed();
   console.log("NFT address:", nft.address);
 
@@ -151,7 +151,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('MEMBER_ADDRESS=' + members.address);
   console.log('MEMBER_HELPERS_ADDRESS=' + memberHelpers.address);
   console.log('VALIDATIONS_HELPERS_ADDRESS=' + validationHelpers.address);
-  console.log('VALIDATIONS_NO_COHORT_ADDRESS=' + noCohort.address);
+  console.log('VALIDATIONS_NO_COHORT_ADDRESS=' + validations.address);
   console.log('NODE_OPERATIONS_ADDRESS=' + nodeOperations.address);
   console.log('QUEUE_ADDRESS=' + queue.address);
   console.log('RULES_NFT_ADDRESS=' + nft.address);
@@ -166,7 +166,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('"MEMBER_ADDRESS":"' + members.address + '",');
   console.log('"MEMBER_HELPERS_ADDRESS":"' + memberHelpers.address + '",');
   console.log('"VALIDATIONS_HELPERS_ADDRESS":"' + validationHelpers.address + '",');
-  console.log('"VALIDATIONS_NO_COHORT_ADDRESS":"' + noCohort.address + '",')
+  console.log('"VALIDATIONS_NO_COHORT_ADDRESS":"' + validations.address + '",')
   console.log('"NODE_OPERATIONS_ADDRESS":"' + nodeOperations.address + '",');
   console.log('"QUEUE_ADDRESS":"' + queue.address + '",');
   console.log('"RULES_NFT_ADDRESS":"' + nft.address + '",');
@@ -187,15 +187,15 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log("memberHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin })")
 
 
-  await memberHelpers.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });
-  console.log('memberHelpers.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin })')
+  await memberHelpers.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
+  console.log('memberHelpers.grantRole(CONTROLLER_ROLE, validations.address, { from: admin })')
 
 
   await memberHelpers.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin });
   console.log('memberHelpers.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin })');
 
-  await nodeOperations.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });
-  console.log('nodeOperations.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });')
+  await nodeOperations.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
+  console.log('nodeOperations.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
 
   await members.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('members.grantRole(CONTROLLER_ROLE, admin, { from: admin });');
@@ -222,8 +222,8 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
 
 
 
-  await queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });
-  console.log('queue.grantRole(CONTROLLER_ROLE, noCohort.address, { from: admin });')
+  await queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
+  console.log('queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
 
   await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
@@ -231,10 +231,10 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
 
-  await validationHelpers.setValAddress(noCohort.address, { from: admin });
-  console.log('ValidationHelpers.setValAddress(noCohort.address, { from: admin });');
+  await validationHelpers.setValAddress(validations.address, { from: admin });
+  console.log('ValidationHelpers.setValAddress(validations.address, { from: admin });');
 
-  await memberHelpers.setValidation(noCohort.address, { from: admin });
+  await memberHelpers.setValidation(validations.address, { from: admin });
   console.log('memberHelpers.setValidation(cohort.address, { from: admin });');
 
   await members.grantRole(SETTER_ROLE, timelock.address, { from: admin });
@@ -245,151 +245,151 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('nodeOperations.grantRole(SETTER_ROLE, timelock.address, { from: admin });');
 
 
-  await members.addUser(validator1, "Validator 1", 1, { from: admin });
-  console.log('members.addUser(validator1, "Validator 1", 1, { from: admin });');
+  // await members.addUser(validator1, "Validator 1", 1, { from: admin });
+  // console.log('members.addUser(validator1, "Validator 1", 1, { from: admin });');
 
-  await await members.addUser(validator2, "Validator 2", 1, { from: admin });
-  console.log('await members.addUser(validator2, "Validator 2", 1, { from: admin });');
+  // await await members.addUser(validator2, "Validator 2", 1, { from: admin });
+  // console.log('await members.addUser(validator2, "Validator 2", 1, { from: admin });');
 
-  await members.addUser(validator3, "Validator 3", 1, { from: admin });
-  console.log('await members.addUser(validator3, "Validator 3", 1, { from: admin });');
+  // await members.addUser(validator3, "Validator 3", 1, { from: admin });
+  // console.log('await members.addUser(validator3, "Validator 3", 1, { from: admin });');
 
-  await members.addUser(validator4, "Validator 4", 1, { from: admin });
-  console.log('await members.addUser(validator4, "Validator 4", 1, { from: admin });');
-
-
-
-  await members.addUser(validator5, "Validator 5", 1, { from: admin });
-  console.log('await members.addUser(validator5, "Validator 5", 1, { from: admin });');
-
-  await members.addUser(validator6, "Validator 6", 1, { from: admin });
-  console.log('await members.addUser(validator6, "Validator 6", 1, { from: admin });');
-
-  await members.addUser(validator7, "Validator 7", 1, { from: admin });
-  console.log('await members.addUser(validator7, "Validator 7", 1, { from: admin });');
-
-  await members.addUser(validator8, "Validator 8", 1, { from: admin });
-  console.log('await members.addUser(validator8, "Validator 8", 1, { from: admin });');
+  // await members.addUser(validator4, "Validator 4", 1, { from: admin });
+  // console.log('await members.addUser(validator4, "Validator 4", 1, { from: admin });');
 
 
 
+  // await members.addUser(validator5, "Validator 5", 1, { from: admin });
+  // console.log('await members.addUser(validator5, "Validator 5", 1, { from: admin });');
 
-  await members.addUser(validator9, "Validator 9", 1, { from: admin });
-  console.log('await members.addUser(validator9, "Validator 9", 1, { from: admin });');
+  // await members.addUser(validator6, "Validator 6", 1, { from: admin });
+  // console.log('await members.addUser(validator6, "Validator 6", 1, { from: admin });');
 
-  await members.addUser(validator10, "Validator 10", 1, { from: admin });
-  console.log('await members.addUser(validator10, "Validator 10", 1, { from: admin });');
+  // await members.addUser(validator7, "Validator 7", 1, { from: admin });
+  // console.log('await members.addUser(validator7, "Validator 7", 1, { from: admin });');
 
-  await members.addUser(validator11, "Validator 11", 1, { from: admin });
-  console.log('await members.addUser(validator11, "Validator 11", 1, { from: admin });');
-
-  await members.addUser(validator12, "Validator 12", 1, { from: admin });
-  console.log('await members.addUser(validator12, "Validator 12", 1, { from: admin });');
-
-
-  await members.addUser(validator13, "Validator 13", 1, { from: admin });
-  console.log('await members.addUser(validator13, "Validator 13", 1, { from: admin });');
-
-  await members.addUser(validator14, "Validator 14", 1, { from: admin });
-  console.log('await members.addUser(validator14, "Validator 14", 1, { from: admin });');
-
-  await members.addUser(validator15, "Validator 15", 1, { from: admin });
-  console.log('await members.addUser(validator15, "Validator 15", 1, { from: admin });');
-
-  await members.addUser(validator16, "Validator 16", 1, { from: admin });
-  console.log('await members.addUser(validator16, "Validator 16", 1, { from: admin });');
+  // await members.addUser(validator8, "Validator 8", 1, { from: admin });
+  // console.log('await members.addUser(validator8, "Validator 8", 1, { from: admin });');
 
 
 
-  await members.addUser(dataSubscriber1, "Datasubscriber 1", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber1, "Datasubscriber 1", 2, { from: admin });');
 
-  await members.addUser(dataSubscriber2, "Datasubscriber 2", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber2, "Datasubscriber 2", 2, { from: admin });');
+  // await members.addUser(validator9, "Validator 9", 1, { from: admin });
+  // console.log('await members.addUser(validator9, "Validator 9", 1, { from: admin });');
 
-  await members.addUser(dataSubscriber3, "Datasubscriber 3", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber3, "Datasubscriber 3", 2, { from: admin });');
+  // await members.addUser(validator10, "Validator 10", 1, { from: admin });
+  // console.log('await members.addUser(validator10, "Validator 10", 1, { from: admin });');
 
-  await members.addUser(dataSubscriber4, "Datasubscriber 4", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber4, "Datasubscriber 4", 2, { from: admin });');
+  // await members.addUser(validator11, "Validator 11", 1, { from: admin });
+  // console.log('await members.addUser(validator11, "Validator 11", 1, { from: admin });');
 
-
-  await members.addUser(dataSubscriber5, "Datasubscriber 5", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber5, "Datasubscriber 5", 2, { from: admin });');
-
-  await members.addUser(dataSubscriber6, "Datasubscriber 6", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber6, "Datasubscriber 6", 2, { from: admin });');
-
-  await members.addUser(dataSubscriber7, "Datasubscriber 7", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber7, "Datasubscriber 7", 2, { from: admin });');
-
-  await members.addUser(dataSubscriber8, "Datasubscriber 8", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber8, "Datasubscriber 8", 2, { from: admin });');
+  // await members.addUser(validator12, "Validator 12", 1, { from: admin });
+  // console.log('await members.addUser(validator12, "Validator 12", 1, { from: admin });');
 
 
-  await members.addUser(dataSubscriber9, "Datasubscriber 9", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber9, "Datasubscriber 9", 2, { from: admin });');
+  // await members.addUser(validator13, "Validator 13", 1, { from: admin });
+  // console.log('await members.addUser(validator13, "Validator 13", 1, { from: admin });');
 
-  await members.addUser(dataSubscriber10, "Datasubscriber 10", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber10, "Datasubscriber 10", 2, { from: admin });');
+  // await members.addUser(validator14, "Validator 14", 1, { from: admin });
+  // console.log('await members.addUser(validator14, "Validator 14", 1, { from: admin });');
 
-  await members.addUser(dataSubscriber11, "Datasubscriber 11", 2, { from: admin });
-  console.log('await members.addUser(dataSubscriber11, "Datasubscriber 11", 2, { from: admin });');
+  // await members.addUser(validator15, "Validator 15", 1, { from: admin });
+  // console.log('await members.addUser(validator15, "Validator 15", 1, { from: admin });');
 
-
-  await token.grantRole(MINTER_ROLE, admin, { from: admin });
-  await token.mint(admin, initialToken, { from: admin });
-
-  await token.transfer(dataSubscriber1, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber2, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber3, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber4, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber5, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber6, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber7, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber8, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber9, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber10, validatorTokenAmount, { from: admin });
-  await token.transfer(dataSubscriber11, validatorTokenAmount, { from: admin });
+  // await members.addUser(validator16, "Validator 16", 1, { from: admin });
+  // console.log('await members.addUser(validator16, "Validator 16", 1, { from: admin });');
 
 
-  await token.transfer(validator1, validatorTokenAmount, { from: admin });
-  await token.transfer(validator2, validatorTokenAmount, { from: admin });
-  await token.transfer(validator3, validatorTokenAmount, { from: admin });
-  await token.transfer(validator4, validatorTokenAmount, { from: admin });
-  await token.transfer(validator5, validatorTokenAmount, { from: admin });
-  await token.transfer(validator6, validatorTokenAmount, { from: admin });
-  await token.transfer(validator7, validatorTokenAmount, { from: admin });
-  await token.transfer(validator8, validatorTokenAmount, { from: admin });
+
+  // await members.addUser(dataSubscriber1, "Datasubscriber 1", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber1, "Datasubscriber 1", 2, { from: admin });');
+
+  // await members.addUser(dataSubscriber2, "Datasubscriber 2", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber2, "Datasubscriber 2", 2, { from: admin });');
+
+  // await members.addUser(dataSubscriber3, "Datasubscriber 3", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber3, "Datasubscriber 3", 2, { from: admin });');
+
+  // await members.addUser(dataSubscriber4, "Datasubscriber 4", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber4, "Datasubscriber 4", 2, { from: admin });');
 
 
-  await token.transfer(validator9, validatorTokenAmount, { from: admin });
-  await token.transfer(validator10, validatorTokenAmount, { from: admin });
-  await token.transfer(validator11, validatorTokenAmount, { from: admin });
-  await token.transfer(validator12, validatorTokenAmount, { from: admin });
-  await token.transfer(validator13, validatorTokenAmount, { from: admin });
-  await token.transfer(validator14, validatorTokenAmount, { from: admin });
-  await token.transfer(validator15, validatorTokenAmount, { from: admin });
-  await token.transfer(validator16, validatorTokenAmount, { from: admin });
+  // await members.addUser(dataSubscriber5, "Datasubscriber 5", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber5, "Datasubscriber 5", 2, { from: admin });');
 
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator2 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator3 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber1 });
+  // await members.addUser(dataSubscriber6, "Datasubscriber 6", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber6, "Datasubscriber 6", 2, { from: admin });');
 
-  await memberHelpers.stake(auditTokenMin, { from: validator1 });
-  await memberHelpers.stake(auditTokenMin, { from: validator2 });
-  await memberHelpers.stake(auditTokenMin, { from: validator3 });
-  await memberHelpers.stake(auditTokenMin, { from: validator4 });
+  // await members.addUser(dataSubscriber7, "Datasubscriber 7", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber7, "Datasubscriber 7", 2, { from: admin });');
 
+  // await members.addUser(dataSubscriber8, "Datasubscriber 8", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber8, "Datasubscriber 8", 2, { from: admin });');
+
+
+  // await members.addUser(dataSubscriber9, "Datasubscriber 9", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber9, "Datasubscriber 9", 2, { from: admin });');
+
+  // await members.addUser(dataSubscriber10, "Datasubscriber 10", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber10, "Datasubscriber 10", 2, { from: admin });');
+
+  // await members.addUser(dataSubscriber11, "Datasubscriber 11", 2, { from: admin });
+  // console.log('await members.addUser(dataSubscriber11, "Datasubscriber 11", 2, { from: admin });');
+
+
+  // await token.grantRole(MINTER_ROLE, admin, { from: admin });
+  // await token.mint(admin, initialToken, { from: admin });
+
+  // await token.transfer(dataSubscriber1, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber2, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber3, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber4, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber5, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber6, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber7, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber8, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber9, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber10, validatorTokenAmount, { from: admin });
+  // await token.transfer(dataSubscriber11, validatorTokenAmount, { from: admin });
+
+
+  // await token.transfer(validator1, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator2, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator3, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator4, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator5, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator6, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator7, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator8, validatorTokenAmount, { from: admin });
+
+
+  // await token.transfer(validator9, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator10, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator11, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator12, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator13, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator14, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator15, validatorTokenAmount, { from: admin });
+  // await token.transfer(validator16, validatorTokenAmount, { from: admin });
+
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator2 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator3 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber1 });
+
+  // await memberHelpers.stake(auditTokenMin, { from: validator1 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator2 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator3 });
   // await memberHelpers.stake(auditTokenMin, { from: validator4 });
-  await memberHelpers.stake(auditTokenMin, { from: dataSubscriber1 });
 
-  await nodeOperations.toggleNodeOperator({ from: validator1 });
-  await nodeOperations.toggleNodeOperator({ from: validator2 });
-  await nodeOperations.toggleNodeOperator({ from: validator3 });
-  await nodeOperations.toggleNodeOperator({ from: validator4 });
+  // // await memberHelpers.stake(auditTokenMin, { from: validator4 });
+  // await memberHelpers.stake(auditTokenMin, { from: dataSubscriber1 });
+
+  // await nodeOperations.toggleNodeOperator({ from: validator1 });
+  // await nodeOperations.toggleNodeOperator({ from: validator2 });
+  // await nodeOperations.toggleNodeOperator({ from: validator3 });
+  // await nodeOperations.toggleNodeOperator({ from: validator4 });
 
 
 
