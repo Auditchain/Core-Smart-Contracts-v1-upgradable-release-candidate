@@ -5,7 +5,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "../Auditchain/ValidationsNoCohort.sol";
+import "../Auditchain/Validations.sol";
 
 
 /**
@@ -15,7 +15,7 @@ import "../Auditchain/ValidationsNoCohort.sol";
 contract RulesERC721Token is ERC721Upgradeable,  ERC721URIStorageUpgradeable, ERC721EnumerableUpgradeable
 {
     using SafeMathUpgradeable for uint256;
-    ValidationsNoCohort public validation;
+    Validations public validation;
 
     mapping(bytes32 => bool) public NFTCompleted;
     event Mint(uint256 tokenId, address recipient);
@@ -24,7 +24,7 @@ contract RulesERC721Token is ERC721Upgradeable,  ERC721URIStorageUpgradeable, ER
         
     {
         __ERC721_init(_name, _symbol);
-        validation = ValidationsNoCohort(_validation);
+        validation = Validations(_validation);
     }
 
 
