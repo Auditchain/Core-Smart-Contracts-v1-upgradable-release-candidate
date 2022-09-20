@@ -3,6 +3,7 @@ pragma solidity =0.8.0;
 
 import "./MemberHelpers.sol";
 import "./IQueue.sol";
+import "./INodeOperations.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 
@@ -15,6 +16,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     enum ValidationStatus {Undefined, Yes, No}   // Validation can be approved or disapproved. Initial status is undefined.
     MemberHelpers public memberHelpers;
     IQueue public queue;
+    INodeOperations public nodeOP;
 
     mapping(address => bool) public valAddresses;
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
@@ -33,6 +35,12 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setValAddress - Caller is not a controller");
         require(_valAddress != address(0), "VH:setValAddress - address can't be 0");
         valAddresses[_valAddress] = true;
+    }
+
+        function setNodeOpAddress(address _nodeOpAddress) external {
+        require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setNodeOpAddress - Caller is not a controller");
+        require(_nodeOpAddress != address(0), "VH:setNodeOpAddress - address can't be 0");
+        nodeOP= INodeOperations(_nodeOpAddress);
     }
 
     // allows verification of existing validation by comparing its init time and document hash
@@ -54,8 +62,8 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
 
-        (,,validationTime,,,,,,,winner,) = IValidations(validationContract).validations(validationHash);
-        valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
+        (,,validationTime,,valUrl,,,,winner,,) = IValidations(validationContract).validations(validationHash);
+        // valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
 
         return (valUrl, winner, validationTime);
 
@@ -237,4 +245,23 @@ contract ValidationHelpers is AccessControlUpgradeable {
            return (currentlyVoted * 100) / totalStaked;
 
     }
+
+    /**
+     *@dev returns list of registered validators 
+     *@return list of addresses 
+     */
+    function returnValidatorList() public view returns (address[] memory) {
+        address[] memory validatorsList = nodeOP.returnNodeOperators();
+        return validatorsList;
+    }
+
+
+    function returnValidatorCount(bytes32 _recentValidationHash, address validationContract) public view returns (uint256){
+
+        (address[] memory nodeOperators, , , , , ) = IValidations(validationContract).collectValidationResults(_recentValidationHash);
+        return nodeOperators.length;
+    }
+
+
+ 
 }
