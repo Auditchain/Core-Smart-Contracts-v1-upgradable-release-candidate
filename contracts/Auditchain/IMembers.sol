@@ -10,5 +10,7 @@ interface IMembers {
     function amountTokensPerValidation() external returns (uint256);
     function maxValidators() external returns (uint256);
     function minContribution() external returns (uint256);
+    function platformShareValidation() external returns (uint256);
+    function platformAddress() external returns (address);
 
 }
