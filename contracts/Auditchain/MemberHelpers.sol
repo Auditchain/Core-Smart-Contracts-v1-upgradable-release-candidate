@@ -21,12 +21,17 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     IValidations public validations; // Validation interface
     mapping(address => uint256) public deposits; //track deposits per user
     uint256 public totalStaked;
+    mapping(address => uint256) public outstandingValidations;
+
     
 
     event LogDepositReceived(address indexed from, uint256 amount);
     event LogDepositRedeemed(address indexed from, uint256 amount);
     event LogIncreaseDeposit(address user, uint256 amount);
     event LogDecreaseDeposit(address user, uint256 amount);
+    event LogIncreaseVal(address user, uint256 val);
+    event LogDecreaseVal(address user, uint256 val);
+
 
     function initialize(address _members, address _auditToken) external {
         require(_members != address(0),"MemberHelpers:constructor - Member address can't be 0");
@@ -54,7 +59,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         _;
     }
 
-    function returnDepositAmount(address user) external view returns (uint256) {
+    function returnDepositAmount(address user) public view returns (uint256) {
         return deposits[user];
     }
 
@@ -69,6 +74,19 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     function decreaseDeposit(address user, uint256 amount) external isController("decreaseDeposit") returns (bool){
         deposits[user] -= amount;
         emit LogDecreaseDeposit(user, amount);
+        return true;
+    }
+
+
+     function increaseValNo(address user) external isController("increaseValNo") returns(bool){
+        outstandingValidations[user]++;
+        emit LogIncreaseVal(user, outstandingValidations[user]);
+        return true;
+    }
+
+    function decreaseValNo(address user) external isController("decreaseValNo") returns (bool){
+        outstandingValidations[user]--;
+        emit LogDecreaseVal(user, outstandingValidations[user]);
         return true;
     }
 
@@ -101,8 +119,7 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
      */
     function redeem(uint256 amount) external nonReentrant {
         if (members.userMap(msg.sender, Members.UserType(0))) {
-            uint256 outstandingVal = validations.outstandingValidations(msg.sender);
-            require(outstandingVal == 0, "MH:redeem - still processing outstanding validations");
+            require(outstandingValidations[msg.sender] == 0, "MH:redeem - still processing outstanding validations");
         }
 
         deposits[msg.sender] -= amount;
@@ -120,5 +137,19 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         require( _validations != address(0), "MH:setValidation - Validation address can't be 0");
         validations = IValidations(_validations);
     }
+
+
+        /**
+     * @dev verify if requesting party has sufficient funds
+     * @param requestor a user whose funds are checked
+     * @return true or false
+     */
+    function checkIfRequestorHasFunds(address requestor, uint256 price) public view returns (bool)
+    { 
+        require(requestor != address(0), "VNC:checkIfRequestorHasFunds - address can't be 0)");
+        return (returnDepositAmount(requestor) > price * (outstandingValidations[requestor] ));
+    }
+
+
 
 }
