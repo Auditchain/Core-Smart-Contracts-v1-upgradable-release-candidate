@@ -142,40 +142,7 @@ contract DepositModifiers is  AccessControlEnumerableUpgradeable, ReentrancyGuar
         emit LogSubscriptionCompleted(msg.sender, length);
     }
 
-    /**
-    * @dev To process payment for cohort validation
-    * @param winner - winner of POW
-    * @param _requestor - requesting party
-    * @param validationHash -  hash identifying validation
-    */
-    function processPayment(address winner, address _requestor, bytes32 validationHash) external  isController("processPayment") nonReentrant {
+   
 
-        uint256 enterprisePortion =  members.amountTokensPerValidation().mul(members.enterpriseMatch()).div(100);
-        uint256 platformFee = members.amountTokensPerValidation().mul(members.platformShareValidation()).div(100);
-        uint256 winnerFee = members.amountTokensPerValidation().add(enterprisePortion).sub(platformFee);
-
-        assert(memberHelpers.decreaseDeposit(_requestor, enterprisePortion));
-        require(IAuditToken(auditToken).mint(address(this), members.amountTokensPerValidation()), "DM:processPayment -problem minting");
-        assert(memberHelpers.increaseDeposit(members.platformAddress(), platformFee));
-
-        assert(memberHelpers.increaseDeposit(winner, winnerFee));
-        emit LogFeesReceived(winner, winnerFee, validationHash);
-        emit LogRewardsDeposited(winnerFee, enterprisePortion, _requestor, validationHash);
-    }
-
-
-     /**
-    * @dev To process payment for no cohort validation
-    * @param _winner - winner of the POW
-    * @param _requestor - requesting party
-    * @param validationHash -  hash identifying validation
-    */
-    function processNonChortPayment(address _winner, address _requestor, bytes32 validationHash, uint256 price) external isController("processNonChortPayment") nonReentrant {
-
-        // uint256 POWFee = nodeOperations.POWFee();
-        assert(memberHelpers.decreaseDeposit(_requestor, price));
-        assert(nodeOperations.increasePOWRewards(_winner, price));
-        emit LogNonCohortValidationPaid(_requestor, _winner, validationHash, price);
-    }
 
 }
