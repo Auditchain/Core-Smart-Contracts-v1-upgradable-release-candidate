@@ -13,7 +13,7 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
  * Data subscriber can request financial document validation,
  * which will be validated by group of node operators. 
  */
-contract Validations is ReentrancyGuardUpgradeable {
+abstract contract Validations  is ReentrancyGuardUpgradeable {
     IMembers public members;
     IQueue public queue;
     IMemberHelpers public memberHelpers;
@@ -237,48 +237,9 @@ contract Validations is ReentrancyGuardUpgradeable {
     }
 
 
-    function registerValidation() public nonReentrant returns(bytes32 valHash){
+    function registerValidation() public virtual  returns(bytes32 valHash);
 
-        bool done;
-        uint256 prevVal = queue.head();
-
-        if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
-
-            (,,,valHash,,,,,) =  queue.get(prevVal);
-
-            while(!done){
-                Validation storage val = validations[valHash];
-
-                if (val.regNum > members.maxValidators()  ){
-
-                    (,prevVal ,,,,,,,) = queue.get(prevVal); 
-                    (,,,valHash,,,,,) =  queue.get(prevVal);
-                } else if (val.regNum <= members.maxValidators() && valHash != 0x0 && regP[msg.sender] != prevVal) {
-
-                    val.regNum ++;
-                    reg[msg.sender] = prevVal;
-                    regP[msg.sender] = prevVal;
-                    done = true;
-                } else{
-                    valHash = 0x0;
-                    done = true;
-                }
-            } 
-
-        }else if (reg[msg.sender] > 0){
-            
-            (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
-            if( votes[msg.sender][valHash])
-                valHash == 0x0;
-
-            if (valHash == 0x0)
-                reg[msg.sender]= 0;
-        } 
-        emit ValRegistered(msg.sender, valHash);
-    }
-
-
-function collectValidationResults(bytes32 validationHash)
+    function collectValidationResults(bytes32 validationHash)
         public
         view
         returns (

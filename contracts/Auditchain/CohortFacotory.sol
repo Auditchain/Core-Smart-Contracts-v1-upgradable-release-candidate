@@ -287,7 +287,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
 
 
    /**
-    * @dev Used to determine cohorts count for given validator
+    * @dev Used to determine cohorts count for given validator enterprise combination
     * @param validator address of the validator
     * @return number of cohorts
     */ 

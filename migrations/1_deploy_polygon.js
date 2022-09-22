@@ -1,16 +1,20 @@
 
 const Members = artifacts.require('./Members.sol');
 const Token = artifacts.require('./AuditToken.sol');
-const Validations = artifacts.require('./Validations.sol');
+const Validations = artifacts.require('./ValNoCohort.sol');
+const ValidationsCohort = artifacts.require('./ValCohort.sol');
 const ValidationHelpers = artifacts.require('./ValidationHelpers.sol');
 const MemberHelpers = artifacts.require('MemberHelpers.sol');
 const NFT = artifacts.require('./RulesERC721Token.sol');
 const NodeOperations = artifacts.require('./NodeOperations.sol');
 const Queue = artifacts.require("./Queue.sol");
+const QueueCohort = artifacts.require("./Queue.sol");
+
+
+const CohortFactory = artifacts.require('./CohortFactory.sol');
 
 const GovernorAlpha = artifacts.require('./Governance/GovernorAlpha.sol')
 const Timelock = artifacts.require('./Governance/Timelock.sol');
-
 const ethers = require('ethers');
 // const timeMachine = require('ganache-time-traveler');
 const abi = new ethers.utils.AbiCoder();
@@ -100,17 +104,23 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let queue = await Queue.deployed();
   console.log("queue address:", queue.address);
 
+  await deployProxy(QueueCohort, { deployer, initializer: 'initialize' });
+  let queueCohort = await Queue.deployed();
+  console.log("queue address:", queueCohort.address);
+
 
   await deployProxy(Members, [token.address, platformAddress], { deployer, initializer: 'initialize' });
   let members = await Members.deployed();
   console.log("member address:", members.address);
 
-
-
+  
   await deployProxy(MemberHelpers, [members.address, token.address], { deployer, initializer: 'initialize' });
   let memberHelpers = await MemberHelpers.deployed();
   console.log("member helpers address:", memberHelpers.address);
 
+  await deployProxy(CohortFactory, [members.address, memberHelpers.address], { deployer, initializer: 'initialize' });
+  let cohortFactory = await Members.deployed();
+  console.log("member address:", cohortFactory.address);
 
 
 
@@ -134,6 +144,11 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log("no cohort address:", validations.address);
 
 
+
+  await deployProxy(ValidationsCohort, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address, cohortFactory.address], { deployer, initializer: 'initialize' });
+  let validationsCohort = await Validations.deployed();
+  console.log("cohort address:",validationsCohort.address);
+
   await deployProxy(NFT, ["AuditChain", "Rules", validations.address], { deployer, initializer: 'initialize' });
   let nft = await NFT.deployed();
   console.log("NFT address:", nft.address);
@@ -152,8 +167,11 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('MEMBER_HELPERS_ADDRESS=' + memberHelpers.address);
   console.log('VALIDATIONS_HELPERS_ADDRESS=' + validationHelpers.address);
   console.log('VALIDATIONS_NO_COHORT_ADDRESS=' + validations.address);
+  console.log('VALIDATIONS_COHORT_ADDRESS=' + validationsCohort.address);
+  console.log('COHORT_FACTORY_ADDRESS=' + cohortFactory.address);
   console.log('NODE_OPERATIONS_ADDRESS=' + nodeOperations.address);
   console.log('QUEUE_ADDRESS=' + queue.address);
+  console.log('QUEUE_COHORT_ADDRESS=' + queueCohort.address);
   console.log('RULES_NFT_ADDRESS=' + nft.address);
   console.log('GOVERNOR_ALPHA_ADDRESS=' + gov.address);
   console.log('TIMELOCK_ADDRESS=' + timelock.address);
@@ -167,8 +185,11 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('"MEMBER_HELPERS_ADDRESS":"' + memberHelpers.address + '",');
   console.log('"VALIDATIONS_HELPERS_ADDRESS":"' + validationHelpers.address + '",');
   console.log('"VALIDATIONS_NO_COHORT_ADDRESS":"' + validations.address + '",')
+  console.log('"VALIDATIONS_COHORT_ADDRESS":"' + validationsCohort.address + '",')
+  console.log('"COHORT_FACTORY_ADDRESS":"' + cohortFactory.address + '",')
   console.log('"NODE_OPERATIONS_ADDRESS":"' + nodeOperations.address + '",');
   console.log('"QUEUE_ADDRESS":"' + queue.address + '",');
+  console.log('"QUEUE_COHORT_ADDRESS":"' + queueCohort.address + '",');
   console.log('"RULES_NFT_ADDRESS":"' + nft.address + '",');
   console.log('"GOVERNOR_ALPHA_ADDRESS":"' + gov.address + '",');
   console.log('"TIMELOCK_ADDRESS":"' + timelock.address + '",' + "\n\n");
@@ -225,6 +246,9 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
 
+  await queueCohort.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });
+  console.log('queue.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });')
+
   await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
 
@@ -234,8 +258,8 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await validationHelpers.setValAddress(validations.address, { from: admin });
   console.log('ValidationHelpers.setValAddress(validations.address, { from: admin });');
 
-  await memberHelpers.setValidation(validations.address, { from: admin });
-  console.log('memberHelpers.setValidation(cohort.address, { from: admin });');
+  // await memberHelpers.setValidation(validations.address, { from: admin });
+  // console.log('memberHelpers.setValidation(cohort.address, { from: admin });');
 
   await members.grantRole(SETTER_ROLE, timelock.address, { from: admin });
   console.log('members.grantRole(SETTER_ROLE, timelock.address, { from: admin });');
