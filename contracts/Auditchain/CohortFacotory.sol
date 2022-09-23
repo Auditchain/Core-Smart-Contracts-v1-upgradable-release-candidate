@@ -138,7 +138,6 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         emit InvitationAccepted(msg.sender, invitationNumber);
     }
 
-
     function clearInvitationRemoveValidator(address validator, AuditTypes audit) external  returns (bool) {
 
         for (uint256 i = 0; i < invitations[msg.sender].length; i++){
@@ -294,6 +293,11 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
     function returnValidatorCohortsCount(address validator, address enterprise) external view returns (uint256){
 
         return validatorCohortList[validator][enterprise].length;
+    }
+
+    function returnValidatorCohortsList(address validator, address enterprise) external view returns (AuditTypes[] memory){
+
+        return validatorCohortList[validator][enterprise];
     }
 
     /**
