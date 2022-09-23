@@ -52,7 +52,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     mapping(address => uint256) public regP;
     mapping(bytes32 => Validation) public validations; // track each validation
    
-    event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url);
+    event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url, AuditTypes auditType);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
                              ValidationStatus decision, string valUrl);
 
@@ -90,7 +90,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
         require(memberHelpers.checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
-        require(members.userMap(msg.sender, IMembers.UserType(2)),"VNC:initValNoCohort - Register as data subscriber");
+        require(members.userMap(msg.sender, IMembers.UserType(2)) || 
+                members.userMap(msg.sender, IMembers.UserType(0)),"VNC:initValNoCohort - Register as data subscriber");
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
@@ -103,9 +104,9 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         newValidation.auditTypes = AuditTypes(auditTypes);
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, block.timestamp));
+        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, block.timestamp, auditTypes));
 
-        emit ValidationInitialized(msg.sender, valHash, block.timestamp, docHash, url);
+        emit ValidationInitialized(msg.sender, valHash, block.timestamp, docHash, url, AuditTypes(auditTypes));
     }
 
     /**
