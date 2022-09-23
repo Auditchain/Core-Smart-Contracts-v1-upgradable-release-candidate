@@ -8,5 +8,6 @@ interface ICohortFactory {
     function cohortMap(address user, uint256 audit)external view returns(bool);
     function isValidatorInvited(address requestor, address validator, uint256 audit)external view returns(bool, bool);
     function validatorCohortList(address user, address validator)external view returns(uint256);
+    function returnValidatorCohortsCount(address validator, address enterprise) external view returns (uint256);
 
 }
