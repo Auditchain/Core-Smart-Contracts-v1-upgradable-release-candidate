@@ -2,8 +2,6 @@
 pragma solidity =0.8.0;
 
 import "./Validations.sol";
-import "./ICohortFactory.sol";
-
 
 /**
  * @title Validations
@@ -12,25 +10,19 @@ import "./ICohortFactory.sol";
  */
 contract ValCohort is Validations {
 
-    ICohortFactory public cohortFactory;
-
-
-
     function initialize (
         address _members,
         address _memberHelpers,
         address _nodeOperations,
         address _validationHelpers,
         address _queue,
-        address _cohortFact  ) public {
+        address _cohortFact  ) public override {
 
-        super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue);
-        cohortFactory = ICohortFactory(_cohortFact);
+        super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
     
     }
 
-
-     function registerValidation() public nonReentrant override returns(bytes32){
+     function registerValidation() public nonReentrant override{
 
         bool done;
         bytes32 valHash;
@@ -44,13 +36,13 @@ contract ValCohort is Validations {
             while(!done){
                 Validation storage val = validations[valHash];
 
-                if (cohortFactory.validatorCohortList(user,msg.sender) == 0){
+                if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] == 0){
 
                 // if (val.regNum > members.maxValidators()  ){
 
                     (,prevVal ,,,,,,,) = queue.get(prevVal); 
                     (,,,valHash,,,,,) =  queue.get(prevVal);
-                } else if (cohortFactory.validatorCohortList(user,msg.sender) > 0 && valHash != 0x0 && regP[msg.sender] != prevVal) {
+                } else if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] > 0 && valHash != 0x0 && regP[msg.sender] != prevVal) {
 
                     val.regNum ++;
                     reg[msg.sender] = prevVal;
@@ -75,6 +67,14 @@ contract ValCohort is Validations {
     }
 
 
+  function executeValidation(bytes32 validationHash, bytes32 documentHash) public override {
 
+        Validation storage validation = validations[validationHash];
+
+        address[] memory vList = cohortFactory.returnValidatorList(validation.requestor, uint8(validation.auditTypes));
+
+        if (validation.executionTime == 0 && validation.validationsCompleted >= vList.length- 1 )
+            super.executeValidation(validationHash, documentHash);
+    }
 
 }
