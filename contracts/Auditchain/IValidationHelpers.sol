@@ -9,4 +9,5 @@ interface IValidationHelpers {
     function determineWinners(bytes32 validationHash) external view returns (address[] memory, uint256);
     function calculateVoteQuorum(bytes32 validationHash, address validationContract) external  view returns (uint256);
     function returnValidatorList() external view returns (address[] memory);
+    function returnConsensus(bytes32 validationHash) external view returns(uint256);
 }
