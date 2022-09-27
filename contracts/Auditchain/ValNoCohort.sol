@@ -17,17 +17,22 @@ contract ValNoCohort is Validations {
         address _memberHelpers,
         address _nodeOperations,
         address _validationHelpers,
-        address _queue  ) public override {
+        address _queue,
+        address _cohortFact  ) public override {
 
-            super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue);
+        super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
+    
+
+            super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
      
     }
 
 
-     function registerValidation() public nonReentrant override returns(bytes32 valHash){
+     function registerValidation() public nonReentrant override {
 
         bool done;
         uint256 prevVal = queue.head();
+        bytes32 valHash;
 
         if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
 
@@ -64,6 +69,13 @@ contract ValNoCohort is Validations {
         emit ValRegistered(msg.sender, valHash);
     }
 
+ function executeValidation(bytes32 validationHash, bytes32 documentHash) public nonReentrant override {
+
+        Validation storage validation = validations[validationHash];
+
+        if (validation.validationsCompleted >= members.maxValidators() && validation.executionTime == 0) 
+            super.executeValidation(validationHash, documentHash);
+    }
 
 
 
