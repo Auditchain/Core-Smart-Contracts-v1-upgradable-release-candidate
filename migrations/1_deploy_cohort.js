@@ -141,7 +141,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let validationHelpers = await ValidationHelpers.deployed();
   console.log("validation helpers address:", validationHelpers.address);
 
-  await deployProxy(Validations, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address], { deployer, initializer: 'initialize' });
+  await deployProxy(Validations, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address, cohortFactory.address], { deployer, initializer: 'initialize' });
   let validations = await Validations.deployed();
   console.log("no cohort address:", validations.address);
 
