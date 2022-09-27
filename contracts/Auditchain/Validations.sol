@@ -6,6 +6,9 @@ import "./IMembers.sol";
 import "./IValidationHelpers.sol";
 import "./IQueue.sol";
 import "./IMemberHelpers.sol";
+import "./ICohortFactory.sol";
+import "./ICohortFactory.sol";
+
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
@@ -16,9 +19,11 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 abstract contract Validations  is ReentrancyGuardUpgradeable {
     IMembers public members;
     IQueue public queue;
-    IMemberHelpers public memberHelpers;
+    IMemberHelpers public mH;
     INodeOperations public nodeOperations;
     IValidationHelpers public validationHelpers;
+    ICohortFactory public cohortFactory;
+
 
     enum AuditTypes {Unknown, Financial, System, NFT, Type4, Type5, Type6}
 
@@ -57,7 +62,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
-                        uint256 timeExecuted, string url, address[] winners);
+                        uint256 timeExecuted, string url);
 
     event PaymentProcessed(bytes32 validationHash, address winner, uint256 pointsPlus, uint256 pointsMinus);
     event WinnerVoted(address validator, address winner, bool isValid);
@@ -68,14 +73,16 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         address _memberHelpers,
         address _nodeOperations,
         address _validationHelpers,
-        address _queue  ) public virtual {
+        address _queue,
+        address _cFactory  ) public virtual {
 
 
         members = IMembers(_members);
-        memberHelpers = IMemberHelpers(_memberHelpers);
+        mH = IMemberHelpers(_memberHelpers);
         nodeOperations = INodeOperations(_nodeOperations);
         validationHelpers = IValidationHelpers(_validationHelpers);
         queue = IQueue(_queue);
+        cohortFactory = ICohortFactory(_cFactory);
      
     }
 
@@ -86,16 +93,16 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      * @param docHash - hashed document
      * @param url - location of the document
      */
-  function initValNoCohort(bytes32 docHash, string memory url, uint8 auditTypes, uint256 price) external  {
+  function initVal(bytes32 docHash, string memory url, uint8 auditTypes, uint256 price) external  {
 
-        require(docHash.length > 0, "VNC:initValNoCohort - Doc hash value can't be 0");
-        require(memberHelpers.checkIfRequestorHasFunds(msg.sender, price),"VNC:initValNoCohort - Deposit additional funds.");
-        require(members.userMap(msg.sender, IMembers.UserType(2)) || 
-                members.userMap(msg.sender, IMembers.UserType(0)),"VNC:initValNoCohort - Register as data subscriber");
+        require(docHash.length > 0, "VNC:initVal - Doc hash value can't be 0");
+        // require(mH.checkIfRequestorHasFunds(msg.sender, price),"VNC:initVal - Deposit additional funds.");
+        // require(members.userMap(msg.sender, IMembers.UserType(2)) || 
+        //         members.userMap(msg.sender, IMembers.UserType(0)),"VNC:initVal - Register as data subscriber");
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
-        assert(memberHelpers.increaseValNo(msg.sender));
+        assert(mH.increaseValNo(msg.sender));
         Validation storage newValidation = validations[valHash];
 
         newValidation.url = url;
@@ -157,22 +164,22 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         return votes[msg.sender][validationHash];
     }
 
-    /**isValidated
+    /**
      *@dev winner gets paid, requestor pays
      *@param validationHash - consist of hash of hashed document and timestamp
      *@param winner - address of the winner
      */
     function processPayments(bytes32 validationHash, address winner) internal {
 
-        Validation storage validation = validations[validationHash];
-        uint256 platformFee = (validation.price * members.platformShareValidation()) / 100;
-        uint256 winnerFee = validation.price - platformFee;
+        Validation storage v = validations[validationHash];
+        uint256 platformFee = (v.price * members.platformShareValidation()) / 100;
+        uint256 winnerFee = v.price - platformFee;
 
-        assert(memberHelpers.decreaseDeposit(validation.requestor, validation.price));
+        assert(mH.decreaseDeposit(v.requestor, v.price));
         assert(nodeOperations.increasePOWRewards(winner, winnerFee));
         assert(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
-        assert(memberHelpers.decreaseValNo(msg.sender));
-        emit PaymentProcessed(validationHash, winner, validation.winnerVotesPlus[winner], validation.winnerVotesMinus[winner]);
+        assert(mH.decreaseValNo(v.requestor));
+        emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner]);
     }
 
     /**
@@ -180,17 +187,16 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      * @param validationHash - consist of hash of hashed document and timestamp
      * @param documentHash hash of the document
      */
-    function executeValidation(bytes32 validationHash, bytes32 documentHash) internal nonReentrant{
+    function executeValidation(bytes32 validationHash, bytes32 documentHash)public  virtual nonReentrant{
 
         Validation storage validation = validations[validationHash];
+
+        uint256 consensus = validationHelpers.returnConsensus(validationHash);
         validation.executionTime = block.timestamp;
-
-        (address[] memory winners, uint256 consensus) = validationHelpers.determineWinners(validationHash);
-
         validation.consensus = consensus;
-        // processedId = queue.findIdForValidationHash(validationHash);
         assert(queue.setValidatedFlag(validationHash));
-        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url,winners);
+        
+        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url);
     }
 
     /**
@@ -224,21 +230,16 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         validation.validationsCompleted++;
         reg[msg.sender] = 0;
-
-
-        // actOpStake[validation.validationTime][valHash] += memberHelpers.returnDepositAmount(msg.sender);
-
-        emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
-
-        if (validation.validationsCompleted >= members.maxValidators() && validation.executionTime == 0) 
-            executeValidation(valHash, docHash);
+        // actOpStake[validation.validationTime][valHash] += mH.returnDepositAmount(msg.sender);
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
         assert(nodeOperations.increaseDelegatedStakeRewards(msg.sender));
+        emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
+        executeValidation(valHash, docHash);
     }
 
 
-    function registerValidation() public virtual  returns(bytes32 valHash);
+    function registerValidation() public virtual;
 
     function collectValidationResults(bytes32 validationHash)
         public
@@ -253,9 +254,14 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         )
     {
         uint256 j = 0;
+        address[] memory validatorsList;
         Validation storage validation = validations[validationHash];
 
-        address[] memory validatorsList = validationHelpers.returnValidatorList();
+        if (validation.auditTypes == AuditTypes.Unknown)
+            validatorsList = validationHelpers.returnValidatorList();
+        else 
+            validatorsList  = cohortFactory.returnValidatorList(validation.requestor, uint8(validation.auditTypes));
+
         address[] memory validatorListActive = new address[](validation.validationsCompleted);
         uint256[] memory stake = new uint256[](validation.validationsCompleted);
         uint256[] memory validatorsValues = new uint256[](validation.validationsCompleted);
@@ -266,7 +272,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         for (uint256 i = 0; i < validatorsList.length; i++) {
             if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
 
-                stake[j] = memberHelpers.returnDepositAmount(validatorsList[i]);
+                stake[j] = mH.returnDepositAmount(validatorsList[i]);
                 validatorsValues[j] = uint256(validation.validatorChoice[validatorsList[i]]);
                 validationTime[j] = validation.validatorTime[validatorsList[i]];
                 validationUrl[j] = validation.validationUrl[validatorsList[i]];
@@ -280,11 +286,11 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         );
     }
 
-function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
+    function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
 
-    Validation storage validation = validations[validationHash];
-    plus = validation.winnerVotesPlus[user];
-    minus = validation.winnerVotesMinus[user];
-}
+        Validation storage validation = validations[validationHash];
+        plus = validation.winnerVotesPlus[user];
+        minus = validation.winnerVotesMinus[user];
+    }
      
 }
