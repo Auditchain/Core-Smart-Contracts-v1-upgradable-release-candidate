@@ -151,6 +151,15 @@ contract ValidationHelpers is AccessControlUpgradeable {
         return (winners, consensus);
     }
 
+    function returnConsensus(bytes32 validationHash) public view returns(uint256) {
+
+        (, uint256[] memory status, ) = insertionSort (validationHash);
+        uint256 consensus = determineConsensus(status);
+
+        return consensus;
+
+    }
+
 
     /**
       * @dev  used during determination of validation winner
