@@ -118,35 +118,35 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
     /**
      *@dev each validator votes who is the winner
-     *@param winners - list of candidates to vote on
-     *@param vote - list of votes for each candidate
-     *@param validationHash - val in question 
+     *@param _winners - list of candidates to vote on
+     *@param _vote - list of votes for each candidate
+     *@param _validationHash - val in question 
      */
-    function voteWinner(address[] memory winners, bool[] memory vote, bytes32 validationHash ) external nonReentrant{
+    function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) external nonReentrant{
 
-        require(votes[msg.sender][validationHash] == false, "VNC:voteWinner - voted already");
+        require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
         require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
 
 
-        Validation storage validation = validations[validationHash];
+        Validation storage validation = validations[_validationHash];
 
-        for (uint8 i = 0; i < winners.length; i++) {
-            if (vote[i])
-                validation.winnerVotesPlus[winners[i]] += 1;
+        for (uint8 i = 0; i < _winners.length; i++) {
+            if (_vote[i])
+                validation.winnerVotesPlus[_winners[i]] += 1;
             else
-                validation.winnerVotesMinus[winners[i]] +=  1;
+                validation.winnerVotesMinus[_winners[i]] +=  1;
 
-            votes[msg.sender][validationHash] = true;
-            emit WinnerVoted(msg.sender, winners[i], vote[i]);
+            votes[msg.sender][_validationHash] = true;
+            emit WinnerVoted(msg.sender, _winners[i], _vote[i]);
         }
 
         validation.winnerConfirmations++;
       
         if (validation.winnerConfirmations >= members.maxValidators() && validation.winner == address(0)) {
-            address winner = validationHelpers.selectWinner(validationHash, winners);
+            address winner = validationHelpers.selectWinner(_validationHash, _winners);
             validation.winner = winner;
-            processPayments(validationHash, winner);
-            assert(queue.removeFromQueue(validationHash));
+            processPayments(_validationHash, winner);
+            assert(queue.removeFromQueue(_validationHash));
         }
     }
 
@@ -191,7 +191,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         Validation storage validation = validations[validationHash];
 
-        uint256 consensus = validationHelpers.returnConsensus(validationHash);
+        uint256 consensus = validationHelpers.returnConsensus(validationHash, address(this));
         validation.executionTime = block.timestamp;
         validation.consensus = consensus;
         assert(queue.setValidatedFlag(validationHash));
@@ -257,8 +257,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         address[] memory validatorsList;
         Validation storage validation = validations[validationHash];
 
-        if (validation.auditTypes == AuditTypes.Unknown)
-            validatorsList = validationHelpers.returnValidatorList();
+        if (validation.auditTypes == AuditTypes(0))
+            validatorsList =  nodeOperations.returnNodeOperators();
         else 
             validatorsList  = cohortFactory.returnValidatorList(validation.requestor, uint8(validation.auditTypes));
 
