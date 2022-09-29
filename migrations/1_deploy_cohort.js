@@ -219,50 +219,52 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await memberHelpers.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin });
   console.log('memberHelpers.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin })');
 
+  
   await nodeOperations.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
   console.log('nodeOperations.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
-
+  
   await nodeOperations.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });
   console.log('nodeOperations.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
-
+  
   await members.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('members.grantRole(CONTROLLER_ROLE, admin, { from: admin });');
-
-
+  
+  
   await token.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('token.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
-
+  
   await token.grantRole(CONTROLLER_ROLE, members.address, { from: admin });
   console.log('token.grantRole(CONTROLLER_ROLE, members.address, { from: admin });');
-
+  
   await token.grantRole(CONTROLLER_ROLE, memberHelpers.address, { from: admin });
   console.log('token.grantRole(CONTROLLER_ROLE, memberHelpers.address, { from: admin });')
-
-
+  
+  
   await token.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin });
   console.log('token.grantRole(CONTROLLER_ROLE, nodeOperations.address, { from: admin });');
-
+  
   // await token.grantRole(CONTROLLER_ROLE, depositModifiers.address, { from: admin });
   // console.log('token.grantRole(CONTROLLER_ROLE, depositModifiers.address, { from: admin });');
-
+  
   await token.grantRole(MINTER_ROLE, nodeOperations.address, { from: admin });
   console.log('token.grantRole(MINTER_ROLE, nodeOperations.address, { from: admin })');
-
-
-
+  
+  
+  
   await queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validations.address, { from: admin });')
-
+  
   await queueCohort.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });')
-
+  
   await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
-
+  
   await validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });
   console.log('validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
-
+  
   await validationHelpers.setValAddress(validations.address, { from: admin });
+  await validationHelpers.setNodeOpAddress(nodeOperations.address, {from:admin});
   console.log('ValidationHelpers.setValAddress(validations.address, { from: admin });');
 
   await validationHelpers.setValAddress(validationsCohort.address, { from: admin });
