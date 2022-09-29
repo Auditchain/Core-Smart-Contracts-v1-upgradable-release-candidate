@@ -69,7 +69,7 @@ contract ValNoCohort is Validations {
         emit ValRegistered(msg.sender, valHash);
     }
 
- function executeValidation(bytes32 validationHash, bytes32 documentHash) public nonReentrant override {
+ function executeValidation(bytes32 validationHash, bytes32 documentHash) public override {
 
         Validation storage validation = validations[validationHash];
 
