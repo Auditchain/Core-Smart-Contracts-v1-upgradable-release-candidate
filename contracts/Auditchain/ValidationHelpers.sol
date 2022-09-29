@@ -115,9 +115,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
       *@dev find out who won the validation race 
       *@param validationHash - hashed document hash with init time
      */
-     function determineWinners(bytes32 validationHash) external  view returns (address[] memory, uint256){
+     function determineWinners(bytes32 validationHash, address validationContract) external  view returns (address[] memory, uint256){
 
-        (address[] memory validator, uint256[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash);
+        (address[] memory validator, uint256[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash, validationContract);
 
         uint256 consensus = determineConsensus(status);
         bool[] memory isWinner = new bool[](validator.length);
@@ -151,9 +151,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
         return (winners, consensus);
     }
 
-    function returnConsensus(bytes32 validationHash) public view returns(uint256) {
+    function returnConsensus(bytes32 validationHash, address validationContract) public view returns(uint256) {
 
-        (, uint256[] memory status, ) = insertionSort (validationHash);
+        (, uint256[] memory status, ) = insertionSort (validationHash, validationContract);
         uint256 consensus = determineConsensus(status);
 
         return consensus;
@@ -166,9 +166,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
       * @param validationHash hashed document hash with init time
       * @return sorted list of validators with their choices and times
      */
-    function insertionSort(bytes32 validationHash) internal view returns (address[] memory, uint256[] memory, uint256[] memory) {
+    function insertionSort(bytes32 validationHash, address validationContract) public view returns (address[] memory, uint256[] memory, uint256[] memory) {
 
-        (address[] memory validator, ,uint256[] memory status, uint256[] memory validationTimes,,) =  IValidations(msg.sender).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint256[] memory status, uint256[] memory validationTimes,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         uint length = validationTimes.length;
         
