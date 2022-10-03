@@ -147,6 +147,11 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     function checkIfRequestorHasFunds(address requestor, uint256 price) public view returns (bool)
     { 
         require(requestor != address(0), "VNC:checkIfRequestorHasFunds - address can't be 0)");
+
+
+        if (outstandingValidations[requestor] == 0)
+            return (returnDepositAmount(requestor) > price );
+
         return (returnDepositAmount(requestor) > price * (outstandingValidations[requestor] ));
     }
 
