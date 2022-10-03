@@ -16,9 +16,9 @@ const MEMBERS = require('../build/contracts/Members.json');
 const MEMBER_HELPERS = require('../build/contracts/MemberHelpers.json');
 // const DEPOSIT_MODIFIERS = require('../build/contracts/DepositModifiers.json');
 const NODE_OPERATIONS = require('../build/contracts/NodeOperations.json');
-// const COHORT_FACTORY = require('../build/contracts/CohortFactory.json');
-const NO_COHORT = require('../build/contracts/ValidationsNoCohort.json');
-// const COHORT = require('../build/contracts/ValidationsCohort.json');
+const COHORT_FACTORY = require('../build/contracts/CohortFactory.json');
+const NO_COHORT = require('../build/contracts/ValNoCohort.json');
+const COHORT = require('../build/contracts/ValCohort.json');
 const GOVERNANCE = require('../build/contracts/GovernorAlpha.json');
 
 
@@ -44,7 +44,7 @@ const memberHelpersAddress = process.env.MEMBER_HELPERS_ADDRESS;
 const rulesNFTAddress = process.env.RULES_NFT_ADDRESS
 // const depositModifiersAddress = process.env.DEPOSIT_MODIFIERS_ADDRESS;
 const nodeOperationsAddress = process.env.NODE_OPERATIONS_ADDRESS;
-// const cohortFactoryAddress = process.env.COHORT_FACTORY_ADDRESS;
+const cohortFactoryAddress = process.env.COHORT_FACTORY_ADDRESS;
 const noCohortAddress = process.env.VALIDATIONS_NO_COHORT_ADDRESS;
 const cohortAddress = process.env.VALIDATIONS_COHORT_ADDRESS;
 const governanceAddress = process.env.GOVERNOR_ALPHA_ADDRESS;
@@ -65,9 +65,9 @@ let members = new web3.eth.Contract(MEMBERS["abi"], membersAddress);
 let membersHelper = new web3.eth.Contract(MEMBER_HELPERS["abi"], memberHelpersAddress);
 // let depositModifiers = new web3.eth.Contract(DEPOSIT_MODIFIERS["abi"], depositModifiersAddress);
 let nodeOperations = new web3.eth.Contract(NODE_OPERATIONS["abi"], nodeOperationsAddress);
-// let cohortFactory = new web3.eth.Contract(COHORT_FACTORY["abi"], cohortFactoryAddress);
+let cohortFactory = new web3.eth.Contract(COHORT_FACTORY["abi"], cohortFactoryAddress);
 let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
-// let cohort = new web3.eth.Contract(COHORT["abi"], cohortAddress);
+let cohort = new web3.eth.Contract(COHORT["abi"], cohortAddress);
 let gov = new web3.eth.Contract(GOVERNANCE["abi"], governanceAddress);
 let nft = new web3.eth.Contract(NFT["abi"], rulesNFTAddress);
 
@@ -383,7 +383,7 @@ async function ValidationInitialized2filters(filter1, filter2) {
 }
 
 async function UserAdded(filter) {
-    let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
+    // let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
 
     try {
         let result;
@@ -525,6 +525,22 @@ async function RequestExecuted(filter) {
 
 }
 
+async function RequestExecutedRequestorCohort(filter) {
+
+    try {
+        const result = await cohort.getPastEvents('RequestExecuted', {
+            filter: { audits: 1, requestor: filter },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+    }
+
+}
+
 
 async function RequestExecutedRequestor(filter) {
 
@@ -541,6 +557,20 @@ async function RequestExecutedRequestor(filter) {
     }
 
 }
+
+
+
+app.get('/RequestExecutedRequestorCohort', function (req, res) {
+
+    let filter = req.query.filter;
+
+    RequestExecutedRequestorCohort(filter).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
 
 
 app.get('/RequestExecutedRequestor', function (req, res) {
@@ -708,6 +738,23 @@ async function ValidatorValidated3filter(filter1, filter2, filter3) {
 }
 
 
+async function ValidatorValidated2filterCohort(filter1, filter2) {
+
+    try {
+        const result = await cohort.getPastEvents('ValidatorValidated', {
+            filter: { documentHash: filter1, validator: filter2 },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+        let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
+    }
+
+}
+
 async function ValidatorValidated2filter(filter1, filter2) {
 
     try {
@@ -724,6 +771,21 @@ async function ValidatorValidated2filter(filter1, filter2) {
     }
 
 }
+
+
+app.get('/ValidatorValidated2filterCohort', function (req, res) {
+
+    let filter1 = req.query.filter1;
+    let filter2 = req.query.filter2;
+
+
+    ValidatorValidated2filterCohort(filter1, filter2).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
 
 
 app.get('/ValidatorValidated2filter', function (req, res) {
