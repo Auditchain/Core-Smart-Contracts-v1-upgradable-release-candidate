@@ -182,19 +182,19 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log("\n\n" + "React format:" + "\n\n");
 
 
-  console.log("\n\n" + '"AUDT_TOKEN_ADDRESS":"' + token.address + '",');
-  console.log('"MEMBER_ADDRESS":"' + members.address + '",');
-  console.log('"MEMBER_HELPERS_ADDRESS":"' + memberHelpers.address + '",');
-  console.log('"VALIDATIONS_HELPERS_ADDRESS":"' + validationHelpers.address + '",');
-  console.log('"VALIDATIONS_NO_COHORT_ADDRESS":"' + validations.address + '",')
-  console.log('"VALIDATIONS_COHORT_ADDRESS":"' + validationsCohort.address + '",')
-  console.log('"COHORT_FACTORY_ADDRESS":"' + cohortFactory.address + '",')
-  console.log('"NODE_OPERATIONS_ADDRESS":"' + nodeOperations.address + '",');
-  console.log('"QUEUE_ADDRESS":"' + queue.address + '",');
-  console.log('"QUEUE_COHORT_ADDRESS":"' + queueCohort.address + '",');
-  console.log('"RULES_NFT_ADDRESS":"' + nft.address + '",');
-  console.log('"GOVERNOR_ALPHA_ADDRESS":"' + gov.address + '",');
-  console.log('"TIMELOCK_ADDRESS":"' + timelock.address + '",' + "\n\n");
+  console.log("\n\n" + 'AUDT_TOKEN_ADDRESS:"' + token.address + '",');
+  console.log('MEMBER_ADDRESS:"' + members.address + '",');
+  console.log('MEMBER_HELPERS_ADDRESS:"' + memberHelpers.address + '",');
+  console.log('VALIDATIONS_HELPERS_ADDRESS:"' + validationHelpers.address + '",');
+  console.log('VALIDATIONS_NO_COHORT_ADDRESS:"' + validations.address + '",')
+  console.log('VALIDATIONS_COHORT_ADDRESS:"' + validationsCohort.address + '",')
+  console.log('COHORT_FACTORY_ADDRESS:"' + cohortFactory.address + '",')
+  console.log('NODE_OPERATIONS_ADDRESS:"' + nodeOperations.address + '",');
+  console.log('QUEUE_ADDRESS:"' + queue.address + '",');
+  console.log('QUEUE_COHORT_ADDRESS:"' + queueCohort.address + '",');
+  console.log('RULES_NFT_ADDRESS:"' + nft.address + '",');
+  console.log('GOVERNOR_ALPHA_ADDRESS:"' + gov.address + '",');
+  console.log('TIMELOCK_ADDRESS:"' + timelock.address + '",' + "\n\n");
 
 
   await timelock.setPendingAdmin(gov.address, { from: admin });
@@ -437,6 +437,14 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await nodeOperations.toggleNodeOperator({ from: validator2 });
   await nodeOperations.toggleNodeOperator({ from: validator3 });
   await nodeOperations.toggleNodeOperator({ from: validator4 });
+
+  await nodeOperations.toggleCPA({ from: validator1 });
+  await nodeOperations.toggleCPA({ from: validator2 });
+  await nodeOperations.toggleCPA({ from: validator3 });
+  await nodeOperations.toggleCPA({ from: validator4 });
+
+
+
 
 
   await cohortFactory.inviteValidator(validator1, 1, { from: enterprise1 });
