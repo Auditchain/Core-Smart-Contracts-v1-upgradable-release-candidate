@@ -477,6 +477,37 @@ async function ValidatorInvited(filter1, filter2) {
 }
 
 
+async function PaymentProcessed(filter) {
+
+    try {
+        const result = await gov.getPastEvents('PaymentProcessed', {
+            filter: { winner: filter },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+    }
+
+}
+
+app.get('/PaymentProcessed', function (req, res) {
+
+    let filter = req.query.filter;
+
+
+    PaymentProcessed(filter).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
+
+
+
 app.get('/ValidatorInvited', function (req, res) {
 
     let filter1 = req.query.filter1;
