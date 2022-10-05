@@ -273,4 +273,40 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
 
  
+    function verifyValidate(bool valTime, bool choice, bool userType, address caller) public view returns (bool) {
+
+        require(userType, "VNC:validate - not authorized.");
+        require(valTime,"VNC:validate - params don't match.");
+        require(choice, "VNC:validate - validated already.");
+        require(nodeOP.returnDelegatorLink(caller) == address(0x0), "VNC:validate - delegated stake, can't validate");
+        require(nodeOP.isNodeOperator(caller),"VNC:validate - not a node operator");
+
+        return true;
+
+    }
+
+    function verifyInit(bool docSize, uint256 price, bool userType, address caller) public view returns (bool) {
+
+        require(docSize, "VNC:initVal - Doc hash value can't be 0");
+        require(memberHelpers.checkIfRequestorHasFunds(caller, price),"VNC:initVal - Deposit additional funds.");
+        require(userType,"VNC:initVal - Register as data subscriber");
+        return true;
+
+    }
+
+    function processPayment(address requestor, uint256 price, address) public {
+
+        require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
+        require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
+
+        (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
+
+        require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
+
+        assert(mH.decreaseDeposit(v.requestor, v.price));
+        assert(nodeOperations.increasePOWRewards(winner, winnerFee));
+        assert(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
+        assert(mH.decreaseValNo(v.requestor));
+        emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner], winnerFee);
+    }
 }
