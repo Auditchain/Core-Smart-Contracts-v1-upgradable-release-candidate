@@ -7,8 +7,6 @@ import "./IValidationHelpers.sol";
 import "./IQueue.sol";
 import "./IMemberHelpers.sol";
 import "./ICohortFactory.sol";
-import "./ICohortFactory.sol";
-
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 /**
@@ -52,7 +50,6 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     }
 
     mapping(address => mapping(bytes32 => bool)) public votes;
-    // mapping(uint256 => mapping(bytes32 => uint256)) public actOpStake;
     mapping(address => uint256) public reg;
     mapping(address => uint256) public regP;
     mapping(bytes32 => Validation) public validations; // track each validation
@@ -64,7 +61,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
                         uint256 timeExecuted, string url);
 
-    event PaymentProcessed(bytes32 validationHash, address winner, uint256 pointsPlus, uint256 pointsMinus);
+    event PaymentProcessed(bytes32 validationHash, address indexed winner, uint256 pointsPlus, uint256 pointsMinus, uint256 indexed amount);
     event WinnerVoted(address validator, address winner, bool isValid);
     event ValRegistered(address indexed validator, bytes32 valHash);
 
@@ -95,10 +92,14 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      */
   function initVal(bytes32 docHash, string memory url, uint8 auditTypes, uint256 price) external  {
 
-        require(docHash.length > 0, "VNC:initVal - Doc hash value can't be 0");
+        // require(docHash.length > 0, "VNC:initVal - Doc hash value can't be 0");
         // require(mH.checkIfRequestorHasFunds(msg.sender, price),"VNC:initVal - Deposit additional funds.");
         // require(members.userMap(msg.sender, IMembers.UserType(2)) || 
         //         members.userMap(msg.sender, IMembers.UserType(0)),"VNC:initVal - Register as data subscriber");
+
+
+        assert(validationHelpers.verifyInit(docHash.length > 0, price, members.userMap(msg.sender, IMembers.UserType(2)) || 
+                members.userMap(msg.sender, IMembers.UserType(0)), msg.sender)); 
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
@@ -122,7 +123,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      *@param _vote - list of votes for each candidate
      *@param _validationHash - val in question 
      */
-    function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) external nonReentrant{
+    function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) public virtual {
 
         require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
         require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
@@ -142,12 +143,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         validation.winnerConfirmations++;
       
-        if (validation.winnerConfirmations >= members.maxValidators() && validation.winner == address(0)) {
-            address winner = validationHelpers.selectWinner(_validationHash, _winners);
-            validation.winner = winner;
-            processPayments(_validationHash, winner);
-            assert(queue.removeFromQueue(_validationHash));
-        }
+       
     }
 
     /**
@@ -172,14 +168,14 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     function processPayments(bytes32 validationHash, address winner) internal {
 
         Validation storage v = validations[validationHash];
-        uint256 platformFee = (v.price * members.platformShareValidation()) / 100;
+        uint256 platformFee = (v.price * members.platformShare()) / 100;
         uint256 winnerFee = v.price - platformFee;
 
         assert(mH.decreaseDeposit(v.requestor, v.price));
         assert(nodeOperations.increasePOWRewards(winner, winnerFee));
         assert(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
         assert(mH.decreaseValNo(v.requestor));
-        emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner]);
+        emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner], winnerFee);
     }
 
     /**
@@ -217,11 +213,15 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         Validation storage validation = validations[valHash];
 
-        require(members.userMap(msg.sender, IMembers.UserType(1)), "VNC:validate - not authorized.");
-        require(validation.validationTime == valTime,"VNC:validate - params don't match.");
-        require(validation.validatorChoice[msg.sender] == ValidationStatus.Undefined, "VNC:validate - validated already.");
-        require(nodeOperations.returnDelegatorLink(msg.sender) == address(0x0), "VNC:validate - delegated stake, can't validate");
-        require(nodeOperations.isNodeOperator(msg.sender),"VNC:validate - not a node operator");
+        // require(members.userMap(msg.sender, IMembers.UserType(1)), "VNC:validate - not authorized.");
+        // require(validation.validationTime == valTime,"VNC:validate - params don't match.");
+        // require(validation.validatorChoice[msg.sender] == ValidationStatus.Undefined, "VNC:validate - validated already.");
+        // require(nodeOperations.returnDelegatorLink(msg.sender) == address(0x0), "VNC:validate - delegated stake, can't validate");
+        // require(nodeOperations.isNodeOperator(msg.sender),"VNC:validate - not a node operator");
+
+        assert(validationHelpers.verifyValidate(validation.validationTime == valTime, 
+                                        validation.validatorChoice[msg.sender] == ValidationStatus.Undefined,
+                                        members.userMap(msg.sender, IMembers.UserType(1)), msg.sender));
 
         validation.validatorChoice[msg.sender] = decision;
         validation.validatorTime[msg.sender] = block.timestamp;
@@ -233,7 +233,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         // actOpStake[validation.validationTime][valHash] += mH.returnDepositAmount(msg.sender);
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
-        assert(nodeOperations.increaseDelegatedStakeRewards(msg.sender));
+        assert(nodeOperations.increaseDSRewards(msg.sender));
         emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
         executeValidation(valHash, docHash);
     }
