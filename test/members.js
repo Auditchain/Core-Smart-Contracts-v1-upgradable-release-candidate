@@ -100,8 +100,8 @@ contract("Member contract", (accounts) => {
 
             await members.grantRole(SETTER_ROLE, admin, { from: admin });
             await members.updatePlatformShareValidation("40", { from: admin });
-            let platformShareValidation = await members.platformShareValidation();
-            assert.strictEqual(platformShareValidation.toString(), "40");
+            let platformShare = await members.platformShare();
+            assert.strictEqual(platformShare.toString(), "40");
         })
 
 
