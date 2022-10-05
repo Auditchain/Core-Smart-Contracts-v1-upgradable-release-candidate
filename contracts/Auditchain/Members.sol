@@ -25,7 +25,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
     uint256 public enterpriseShareSubscriber;
     uint256 public validatorShareSubscriber;
     address public platformAddress;
-    uint256 public platformShareValidation;    
+    uint256 public platformShare;    
     uint256 public enterpriseMatch;         
     uint256 public minDepositDays;
     uint256 public requiredQuorum;             // quorum required to consider validation valid
@@ -70,7 +70,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
         accessFee = 1000e18;
         enterpriseShareSubscriber = 40;
         validatorShareSubscriber = 40;
-        platformShareValidation = 15;    
+        platformShare = 15;    
         enterpriseMatch = 200;       
         minDepositDays = 30;
         requiredQuorum = 80;
@@ -119,7 +119,7 @@ contract Members is  AccessControlEnumerableUpgradeable {
     function updatePlatformShareValidation(uint256 _newFee) external isSetter() {
 
         require(_newFee != 0, "Members:updatePlatformShareValidation - New value for the platform fee can't be 0");
-        platformShareValidation = _newFee;
+        platformShare = _newFee;
         emit LogGovernanceUpdate(_newFee, "updatePlatformShareValidation");
     }
 
