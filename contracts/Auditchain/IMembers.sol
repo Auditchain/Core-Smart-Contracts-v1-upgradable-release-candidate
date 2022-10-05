@@ -5,12 +5,9 @@ interface IMembers {
 
     enum UserType {Enterprise, Validator, DataSubscriber}  
     function userMap(address user, UserType userType) external returns (bool);
-    function requiredQuorum() external returns (uint256);
-    function enterpriseMatch() external returns (uint256);
-    function amountTokensPerValidation() external returns (uint256);
     function maxValidators() external returns (uint256);
     function minContribution() external returns (uint256);
-    function platformShareValidation() external returns (uint256);
+    function platformShare() external returns (uint256);
     function platformAddress() external returns (address);
 
 }
