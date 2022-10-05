@@ -38,8 +38,6 @@ contract ValCohort is Validations {
 
                 if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] == 0){
 
-                // if (val.regNum > members.maxValidators()  ){
-
                     (,prevVal ,,,,,,,) = queue.get(prevVal); 
                     (,,,valHash,,,,,) =  queue.get(prevVal);
                 } else if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] > 0 && valHash != 0x0 && regP[msg.sender] != prevVal) {
@@ -66,6 +64,7 @@ contract ValCohort is Validations {
         emit ValRegistered(msg.sender, valHash);
     }
 
+ 
 
   function executeValidation(bytes32 validationHash, bytes32 documentHash) public override {
 
@@ -75,6 +74,22 @@ contract ValCohort is Validations {
 
         if (validation.executionTime == 0 && validation.validationsCompleted >= vList.length- 1 )
             super.executeValidation(validationHash, documentHash);
+    }
+
+
+    function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) public override nonReentrant{
+
+        super.voteWinner(_winners, _vote, _validationHash);
+
+        Validation storage validation = validations[_validationHash];
+        address[] memory vList = cohortFactory.returnValidatorList(validation.requestor, uint8(validation.auditTypes));
+
+         if (validation.validationsCompleted >= vList.length- 1 && validation.winner == address(0)) {
+            address winner = validationHelpers.selectWinner(_validationHash, _winners);
+            validation.winner = winner;
+            processPayments(_validationHash, winner);
+            assert(queue.removeFromQueue(_validationHash));
+        }
     }
 
 }
