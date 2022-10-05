@@ -21,9 +21,6 @@ contract ValNoCohort is Validations {
         address _cohortFact  ) public override {
 
         super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
-    
-
-            super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
      
     }
 
@@ -69,7 +66,7 @@ contract ValNoCohort is Validations {
         emit ValRegistered(msg.sender, valHash);
     }
 
- function executeValidation(bytes32 validationHash, bytes32 documentHash) public override {
+    function executeValidation(bytes32 validationHash, bytes32 documentHash) public override {
 
         Validation storage validation = validations[validationHash];
 
@@ -78,5 +75,19 @@ contract ValNoCohort is Validations {
     }
 
 
+    function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) public override nonReentrant{
+
+        super.voteWinner(_winners, _vote, _validationHash);
+
+        Validation storage validation = validations[_validationHash];
+
+
+         if (validation.winnerConfirmations >= members.maxValidators() && validation.winner == address(0)) {
+            address winner = validationHelpers.selectWinner(_validationHash, _winners);
+            validation.winner = winner;
+            processPayments(_validationHash, winner);
+            assert(queue.removeFromQueue(_validationHash));
+        }
+    }
 
 }
