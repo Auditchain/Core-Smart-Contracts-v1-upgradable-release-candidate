@@ -346,8 +346,24 @@ async function ValidationInitialized(filter) {
     try {
         const result = await noCohort.getPastEvents('ValidationInitialized', {
             filter: { user: filter },
-            fromBlock:
-                0,
+            fromBlock:0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+    }
+
+}
+
+
+async function ValidationInitializedCohort(filter) {
+
+    try {
+        const result = await cohort.getPastEvents('ValidationInitialized', {
+            filter: { user: filter },
+            fromBlock:0,
             toBlock: 'latest'
         });
 
@@ -718,6 +734,18 @@ app.get('/ValidationInitialized', function (req, res) {
     let filter = req.query.filter;
 
     ValidationInitialized(filter).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
+
+app.get('/ValidationInitializedCohort', function (req, res) {
+
+    let filter = req.query.filter;
+
+    ValidationInitializedCohort(filter).then(async function (returnedData) {
         res.end(JSON.stringify(returnedData));
     }).catch(function (err) {
         console.log(err);
