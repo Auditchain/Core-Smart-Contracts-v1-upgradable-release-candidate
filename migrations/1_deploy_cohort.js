@@ -137,7 +137,7 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log("node operations address:", nodeOperations.address);
 
 
-  await deployProxy(ValidationHelpers, [memberHelpers.address, queue.address], { deployer, initializer: 'initialize' });
+  await deployProxy(ValidationHelpers, [memberHelpers.address], { deployer, initializer: 'initialize' });
   let validationHelpers = await ValidationHelpers.deployed();
   console.log("validation helpers address:", validationHelpers.address);
 
@@ -256,6 +256,9 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   
   await queueCohort.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationsCohort.address, { from: admin });')
+
+  await queueCohort.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
+  console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
   
   await queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });
   console.log('queue.grantRole(CONTROLLER_ROLE, validationHelpers.address, { from: admin });')
