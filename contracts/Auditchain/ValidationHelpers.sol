@@ -15,19 +15,17 @@ contract ValidationHelpers is AccessControlUpgradeable {
     
     enum ValidationStatus {Undefined, Yes, No}   // Validation can be approved or disapproved. Initial status is undefined.
     MemberHelpers public memberHelpers;
-    IQueue public queue;
     INodeOperations public nodeOP;
 
     mapping(address => bool) public valAddresses;
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
 
 
-    event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
+    // event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
 
 
-    function initialize(address _memberHelpers, address _queue) external  {
+    function initialize(address _memberHelpers) external  {
         memberHelpers = MemberHelpers(_memberHelpers);
-        queue = IQueue(_queue);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
     // allows on setting of validation contract address
@@ -70,26 +68,26 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
 
-    /**
-     * @dev replace or cancel existing validation waiting in the queue with new price
-     * @param price - new price, if price is 0 only remove request
-     * @param validationHash validation hash for request
-     */
-    function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract) external {
+    // /**
+    //  * @dev replace or cancel existing validation waiting in the queue with new price
+    //  * @param price - new price, if price is 0 only remove request
+    //  * @param validationHash validation hash for request
+    //  */
+    // function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract, address queueContract) external {
 
-        require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-        require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
+    //     require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
+    //     require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
 
-        (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
+    //     (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
 
-        require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
-        if (price == 0)
-            assert(queue.removeFromQueue(validationHash));
-        else
-            assert(queue.replaceValidation(price, validationHash));
+    //     require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
+    //     if (price == 0)
+    //         assert(IQueue(queueContract).removeFromQueue(validationHash));
+    //     else
+    //         assert(IQueue(queueContract).replaceValidation(price, validationHash));
             
-        emit ReplaceCancelValidation(msg.sender, validationHash, price);
-    }
+    //     emit ReplaceCancelValidation(msg.sender, validationHash, price);
+    // }
 
     /**
       *@dev winner is being selected by sum of negative and positive votes and total compared with scores of other validators
@@ -292,21 +290,5 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(userType,"VNC:initVal - Register as data subscriber");
         return true;
 
-    }
-
-    function processPayment(address requestor, uint256 price, address) public {
-
-        require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-        require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
-
-        (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
-
-        require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
-
-        assert(mH.decreaseDeposit(v.requestor, v.price));
-        assert(nodeOperations.increasePOWRewards(winner, winnerFee));
-        assert(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
-        assert(mH.decreaseValNo(v.requestor));
-        emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner], winnerFee);
     }
 }
