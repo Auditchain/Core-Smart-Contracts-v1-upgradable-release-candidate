@@ -330,8 +330,8 @@ contract Queue is AccessControlEnumerableUpgradeable{
 
         uint256 id = findIdForValidationHash(_valHash);
         (,,,,bytes32 documentHash, string memory url, address user, uint256 initTime,,) = get(id);
-        addToQueue(newPrice, _valHash, documentHash, url, user, initTime, auditType); 
         removeFromQueue(_valHash);
+        addToQueue(newPrice, _valHash, documentHash, url, user, initTime, auditType); 
 
         return true;
     }
