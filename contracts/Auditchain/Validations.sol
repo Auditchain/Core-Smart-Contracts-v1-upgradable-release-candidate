@@ -64,6 +64,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     event PaymentProcessed(bytes32 validationHash, address indexed winner, uint256 pointsPlus, uint256 pointsMinus, uint256 indexed amount);
     event WinnerVoted(address validator, address winner, bool isValid);
     event ValRegistered(address indexed validator, bytes32 valHash);
+    event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
+
 
     function initialize (
         address _members,
@@ -83,20 +85,17 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      
     }
 
-
-
     /**
      * @dev to be called by user to validate fin statements
      * @param docHash - hashed document
      * @param url - location of the document
      */
   function initVal(bytes32 docHash, string memory url, uint8 auditTypes, uint256 price) external  {
-
-        // require(docHash.length > 0, "VNC:initVal - Doc hash value can't be 0");
-        // require(mH.checkIfRequestorHasFunds(msg.sender, price),"VNC:initVal - Deposit additional funds.");
-        // require(members.userMap(msg.sender, IMembers.UserType(2)) || 
-        //         members.userMap(msg.sender, IMembers.UserType(0)),"VNC:initVal - Register as data subscriber");
-
+    /**
+     * @dev replace or cancel existing validation waiting in the queue with new price
+     * @param price - new price, if price is 0 only remove request
+     * @param validationHash validation hash for request
+     */
 
         assert(validationHelpers.verifyInit(docHash.length > 0, price, members.userMap(msg.sender, IMembers.UserType(2)) || 
                 members.userMap(msg.sender, IMembers.UserType(0)), msg.sender)); 
@@ -125,8 +124,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      */
     function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) public virtual {
 
-        require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
-        require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
+        // require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
+        // require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
 
 
         Validation storage validation = validations[_validationHash];
@@ -212,13 +211,6 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, subscriber));
 
         Validation storage validation = validations[valHash];
-
-        // require(members.userMap(msg.sender, IMembers.UserType(1)), "VNC:validate - not authorized.");
-        // require(validation.validationTime == valTime,"VNC:validate - params don't match.");
-        // require(validation.validatorChoice[msg.sender] == ValidationStatus.Undefined, "VNC:validate - validated already.");
-        // require(nodeOperations.returnDelegatorLink(msg.sender) == address(0x0), "VNC:validate - delegated stake, can't validate");
-        // require(nodeOperations.isNodeOperator(msg.sender),"VNC:validate - not a node operator");
-
         assert(validationHelpers.verifyValidate(validation.validationTime == valTime, 
                                         validation.validatorChoice[msg.sender] == ValidationStatus.Undefined,
                                         members.userMap(msg.sender, IMembers.UserType(1)), msg.sender));
@@ -230,7 +222,6 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         validation.validationsCompleted++;
         reg[msg.sender] = 0;
-        // actOpStake[validation.validationTime][valHash] += mH.returnDepositAmount(msg.sender);
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
         assert(nodeOperations.increaseDSRewards(msg.sender));
@@ -292,5 +283,26 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         plus = validation.winnerVotesPlus[user];
         minus = validation.winnerVotesMinus[user];
     }
+
+    /**
+     * @dev replace or cancel existing validation waiting in the queue with new price
+     * @param price - new price, if price is 0 only remove request
+     * @param validationHash validation hash for request
+     */
+    function replaceCancelValidation(uint256 price, bytes32 validationHash) external {
+
+        // require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
+        Validation storage validation = validations[validationHash];
+
+        require(msg.sender == validation.requestor , "VH:replaceCancelValidation - not yours");
+        if (price == 0)
+            assert(queue.removeFromQueue(validationHash));
+        else
+            assert(queue.replaceValidation(price, validationHash));
+        validation.executionTime = 1;
+            
+        emit ReplaceCancelValidation(msg.sender, validationHash, price);
+    }
      
 }
+ 
