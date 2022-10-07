@@ -307,6 +307,7 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /// remove submitted request for validation from queue
     function removeFromQueue(bytes32 _valHash) public isController() returns (bool){
         uint256 id = findIdForValidationHash(_valHash);
+        require(id != 0, "Queue:removeFromQueue - this item doesn't exist");
         remove(id);
         return true;
     }
@@ -326,10 +327,10 @@ contract Queue is AccessControlEnumerableUpgradeable{
     }
 
     /// replace or remove pending validation 
-    function replaceValidation(uint256 newPrice, bytes32 _valHash, uint8 auditType) external isController() returns (bool){
+    function replaceValidation(uint256 newPrice, bytes32 _valHash) external isController() returns (bool){
 
         uint256 id = findIdForValidationHash(_valHash);
-        (,,,,bytes32 documentHash, string memory url, address user, uint256 initTime,,) = get(id);
+        (,,,,bytes32 documentHash, string memory url, address user, uint256 initTime,, uint8 auditType) = get(id);
         removeFromQueue(_valHash);
         addToQueue(newPrice, _valHash, documentHash, url, user, initTime, auditType); 
 
