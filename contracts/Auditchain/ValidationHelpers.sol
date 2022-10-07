@@ -4,6 +4,7 @@ pragma solidity =0.8.0;
 import "./MemberHelpers.sol";
 import "./IQueue.sol";
 import "./INodeOperations.sol";
+import "./ICohortFactory.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 
@@ -16,9 +17,12 @@ contract ValidationHelpers is AccessControlUpgradeable {
     enum ValidationStatus {Undefined, Yes, No}   // Validation can be approved or disapproved. Initial status is undefined.
     MemberHelpers public memberHelpers;
     INodeOperations public nodeOP;
+    ICohortFactory public cohortFactory;
 
     mapping(address => bool) public valAddresses;
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
+    event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
+
 
 
     // event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
@@ -35,10 +39,16 @@ contract ValidationHelpers is AccessControlUpgradeable {
         valAddresses[_valAddress] = true;
     }
 
-        function setNodeOpAddress(address _nodeOpAddress) external {
+    function setNodeOpAddress(address _nodeOpAddress) external {
         require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setNodeOpAddress - Caller is not a controller");
         require(_nodeOpAddress != address(0), "VH:setNodeOpAddress - address can't be 0");
         nodeOP= INodeOperations(_nodeOpAddress);
+    }
+
+    function setCohortFactoryAddress(address _cohortFactoryAddress) external {
+        require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setCohortFactoryAddress - Caller is not a controller");
+        require(_cohortFactoryAddress != address(0), "VH:setCohortFactoryAddress - address can't be 0");
+        cohortFactory= ICohortFactory(_cohortFactoryAddress);
     }
 
     // allows verification of existing validation by comparing its init time and document hash
@@ -68,26 +78,26 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
 
-    // /**
-    //  * @dev replace or cancel existing validation waiting in the queue with new price
-    //  * @param price - new price, if price is 0 only remove request
-    //  * @param validationHash validation hash for request
-    //  */
-    // function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract, address queueContract) external {
+    /**
+     * @dev replace or cancel existing validation waiting in the queue with new price
+     * @param price - new price, if price is 0 only remove request
+     * @param validationHash validation hash for request
+     */
+    function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract, address queueContract) external {
 
-    //     require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-    //     require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
+        require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
+        require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
 
-    //     (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
+        (,address requestor,,,,,,,,,) = IValidations(validationContract).validations(validationHash);
 
-    //     require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
-    //     if (price == 0)
-    //         assert(IQueue(queueContract).removeFromQueue(validationHash));
-    //     else
-    //         assert(IQueue(queueContract).replaceValidation(price, validationHash));
+        require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
+        if (price == 0)
+            assert(IQueue(queueContract).removeFromQueue(validationHash));
+        else
+            assert(IQueue(queueContract).replaceValidation(price, validationHash));
             
-    //     emit ReplaceCancelValidation(msg.sender, validationHash, price);
-    // }
+        emit ReplaceCancelValidation(msg.sender, validationHash, price);
+    }
 
     /**
       *@dev winner is being selected by sum of negative and positive votes and total compared with scores of other validators
@@ -227,7 +237,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     * @param validationHash - consist of hash of hashed document and timestamp
     * @return number representing current participation level in percentage
     */
-    function calculateVoteQuorum(bytes32 validationHash, address validationContract)external view returns (uint256)
+    function calculateVoteQuorum(bytes32 validationHash, address validationContract, address enterprise, uint8 auditType)external view returns (uint256)
     {
 
         require(validationHash != bytes32(0), "VH:calculateVoteQuorum - hash can't be 0");
@@ -236,7 +246,13 @@ contract ValidationHelpers is AccessControlUpgradeable {
         uint256 totalStaked;
         uint256 currentlyVoted;
 
-        address[] memory validatorsList = IValidations(validationContract).returnValidatorList(validationHash);
+        address[] memory validatorsList;
+
+        if (auditType == 0)
+            validatorsList = nodeOP.returnNodeOperators();
+        else    
+            validatorsList = cohortFactory.returnValidatorList(enterprise, auditType);
+
         (address[] memory validatorListActive, ,uint256[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         for (uint256 i = 0; i < validatorsList.length; i++) {
