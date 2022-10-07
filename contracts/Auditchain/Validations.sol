@@ -64,7 +64,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     event PaymentProcessed(bytes32 validationHash, address indexed winner, uint256 pointsPlus, uint256 pointsMinus, uint256 indexed amount);
     event WinnerVoted(address validator, address winner, bool isValid);
     event ValRegistered(address indexed validator, bytes32 valHash);
-    event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
+    // event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
 
 
     function initialize (
@@ -124,8 +124,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      */
     function voteWinner(address[] memory _winners, bool[] memory _vote, bytes32 _validationHash ) public virtual {
 
-        // require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
-        // require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
+        require(votes[msg.sender][_validationHash] == false, "VNC:voteWinner - voted already");
+        require(members.userMap(msg.sender, IMembers.UserType(1)),"VNC:voteWinner - not registered as a validator");
 
 
         Validation storage validation = validations[_validationHash];
@@ -289,20 +289,21 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      * @param price - new price, if price is 0 only remove request
      * @param validationHash validation hash for request
      */
-    function replaceCancelValidation(uint256 price, bytes32 validationHash) external {
+    // function replaceCancelValidation(uint256 price, bytes32 validationHash) external {
 
-        // require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-        Validation storage validation = validations[validationHash];
+    //     // require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
+    //     Validation storage validation = validations[validationHash];
 
-        require(msg.sender == validation.requestor , "VH:replaceCancelValidation - not yours");
-        if (price == 0)
-            assert(queue.removeFromQueue(validationHash));
-        else
-            assert(queue.replaceValidation(price, validationHash));
-        validation.executionTime = 1;
+    //     require(msg.sender == validation.requestor , "VH:replaceCancelValidation - not yours");
+    //     if (price == 0){
+    //         assert(queue.removeFromQueue(validationHash));
+    //         validation.executionTime = 1;
+    //     }
+    //     else
+    //         assert(queue.replaceValidation(price, validationHash));
             
-        emit ReplaceCancelValidation(msg.sender, validationHash, price);
-    }
+    //     emit ReplaceCancelValidation(msg.sender, validationHash, price);
+    // }
      
 }
  
