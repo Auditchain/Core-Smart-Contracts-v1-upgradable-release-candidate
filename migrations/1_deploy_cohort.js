@@ -267,8 +267,14 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   console.log('validationHelpers.grantRole(CONTROLLER_ROLE, admin, { from: admin });')
   
   await validationHelpers.setValAddress(validations.address, { from: admin });
-  await validationHelpers.setNodeOpAddress(nodeOperations.address, {from:admin});
   console.log('ValidationHelpers.setValAddress(validations.address, { from: admin });');
+
+  await validationHelpers.setNodeOpAddress(nodeOperations.address, {from:admin});
+  console.log('ValidationHelpers.setNodeOpAddress(nodeOperations.address, { from: admin });');
+
+  await validationHelpers.setCohortFactoryAddress(cohortFactory.address, {from:admin});
+  console.log('ValidationHelpers.setCohortFactoryAddress(cohortFactory.address, { from: admin });');
+
 
   await validationHelpers.setValAddress(validationsCohort.address, { from: admin });
   console.log('ValidationHelpers.setValAddress(validations.address, { from: admin });');
