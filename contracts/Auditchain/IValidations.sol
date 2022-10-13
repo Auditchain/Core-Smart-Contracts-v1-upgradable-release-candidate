@@ -29,7 +29,7 @@ interface IValidations {
         returns (
             address[] memory,
             uint256[] memory,
-            uint256[] memory,
+            uint8[] memory,
             uint256[] memory,
             string[] memory,
             bytes32[] memory
@@ -46,5 +46,6 @@ interface IValidations {
                 uint64 winnerConfirmations,
                 bool paymentSent,
                 address winner);
+
 
 }
