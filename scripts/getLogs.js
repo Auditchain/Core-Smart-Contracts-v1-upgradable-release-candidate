@@ -398,6 +398,23 @@ async function ValidationInitialized2filters(filter1, filter2) {
 
 }
 
+
+async function ValidationInitializedCohort2filters(filter1, filter2) {
+
+    try {
+        const result = await cohort.getPastEvents('ValidationInitialized', {
+            filter: { user: filter1, auditType: filter2 },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+        return result;
+    } catch (err) {
+        console.log(err);
+           
+    }
+
+}
+
 async function UserAdded(filter) {
     // let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
 
@@ -555,6 +572,23 @@ async function ProposalExecuted(filter) {
 
 }
 
+async function RequestExecutedCohort(filter) {
+
+    try {
+        const result = await cohort.getPastEvents('RequestExecuted', {
+            filter: { audits: filter },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+    }
+
+}
+
+
 
 async function RequestExecuted(filter) {
 
@@ -576,7 +610,7 @@ async function RequestExecutedRequestorCohort(filter) {
 
     try {
         const result = await cohort.getPastEvents('RequestExecuted', {
-            filter: { audits: 1, requestor: filter },
+            filter: { requestor: filter },
             fromBlock: 0,
             toBlock: 'latest'
         });
@@ -593,7 +627,7 @@ async function RequestExecutedRequestor(filter) {
 
     try {
         const result = await noCohort.getPastEvents('RequestExecuted', {
-            filter: { audits: 1, requestor: filter },
+            filter: { requestor: filter },
             fromBlock: 0,
             toBlock: 'latest'
         });
@@ -637,6 +671,19 @@ app.get('/RequestExecuted', function (req, res) {
     let filter = req.query.filter;
 
     RequestExecuted(filter).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
+
+
+app.get('/RequestExecutedCohort', function (req, res) {
+
+    let filter = req.query.filter;
+
+    RequestExecutedCohort(filter).then(async function (returnedData) {
         res.end(JSON.stringify(returnedData));
     }).catch(function (err) {
         console.log(err);
@@ -716,6 +763,20 @@ app.get('/ValidationInitialized2filters', function (req, res) {
 })
 
 
+app.get('/ValidationInitializedCohort2filters', function (req, res) {
+
+    let filter1 = req.query.filter1;
+    let filter2 = req.query.filter2;
+
+    ValidationInitializedCohort2filters(filter1, filter2).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
+
+
 app.get('/UserAdded', function (req, res) {
 
     let filter = req.query.filter;
@@ -778,6 +839,22 @@ app.get('/ValidatorValidatedDocumentHash', function (req, res) {
 
 })
 
+async function ValidatorValidatedCohort3filter(filter1, filter2, filter3) {
+
+    try {
+        const result = await cohort.getPastEvents('ValidatorValidated', {
+            filter: { documentHash: filter1, validator: filter2, executionTime: filter3 },
+            fromBlock: 0,
+            toBlock: 'latest'
+        });
+
+        return result;
+    } catch (err) {
+        console.log(err);
+        let noCohort = new web3.eth.Contract(NO_COHORT["abi"], noCohortAddress);
+    }
+
+}
 
 async function ValidatorValidated3filter(filter1, filter2, filter3) {
 
@@ -876,6 +953,21 @@ app.get('/ValidatorValidated3filter', function (req, res) {
 
 })
 
+
+app.get('/ValidatorValidatedCohort3filter', function (req, res) {
+
+    let filter1 = req.query.filter1;
+    let filter2 = req.query.filter2;
+    let filter3 = req.query.filter3;
+
+
+    ValidatorValidatedCohort3filter(filter1, filter2, filter3).then(async function (returnedData) {
+        res.end(JSON.stringify(returnedData));
+    }).catch(function (err) {
+        console.log(err);
+    })
+
+})
 
 app.get('/ValidatorValidated', function (req, res) {
 
