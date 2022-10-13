@@ -59,7 +59,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
                              ValidationStatus decision, string valUrl);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
-                        uint256 timeExecuted, string url);
+                        uint256 timeExecuted, string url, AuditTypes indexed audits);
 
     event PaymentProcessed(bytes32 validationHash, address indexed winner, uint256 pointsPlus, uint256 pointsMinus, uint256 indexed amount);
     event WinnerVoted(address validator, address winner, bool isValid);
@@ -191,7 +191,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         validation.consensus = consensus;
         assert(queue.setValidatedFlag(validationHash));
         
-        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url);
+        emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url, validation.auditTypes);
     }
 
     /**
@@ -238,7 +238,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         returns (
             address[] memory,
             uint256[] memory,
-            uint256[] memory,
+            uint8[] memory,
             uint256[] memory,
             string[] memory,
             bytes32[] memory
@@ -255,7 +255,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         address[] memory validatorListActive = new address[](validation.validationsCompleted);
         uint256[] memory stake = new uint256[](validation.validationsCompleted);
-        uint256[] memory validatorsValues = new uint256[](validation.validationsCompleted);
+        uint8[] memory validatorsValues = new uint8[](validation.validationsCompleted);
         uint256[] memory validationTime = new uint256[](validation.validationsCompleted);
         string[] memory validationUrl = new string[](validation.validationsCompleted);
         bytes32[] memory reportHash = new bytes32[](validation.validationsCompleted);
@@ -264,7 +264,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
             if (validation.validatorChoice[validatorsList[i]] != ValidationStatus.Undefined) {
 
                 stake[j] = mH.returnDepositAmount(validatorsList[i]);
-                validatorsValues[j] = uint256(validation.validatorChoice[validatorsList[i]]);
+                validatorsValues[j] = uint8(validation.validatorChoice[validatorsList[i]]);
                 validationTime[j] = validation.validatorTime[validatorsList[i]];
                 validationUrl[j] = validation.validationUrl[validatorsList[i]];
                 validatorListActive[j] = validatorsList[i];
@@ -284,26 +284,6 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         minus = validation.winnerVotesMinus[user];
     }
 
-    /**
-     * @dev replace or cancel existing validation waiting in the queue with new price
-     * @param price - new price, if price is 0 only remove request
-     * @param validationHash validation hash for request
-     */
-    // function replaceCancelValidation(uint256 price, bytes32 validationHash) external {
-
-    //     // require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
-    //     Validation storage validation = validations[validationHash];
-
-    //     require(msg.sender == validation.requestor , "VH:replaceCancelValidation - not yours");
-    //     if (price == 0){
-    //         assert(queue.removeFromQueue(validationHash));
-    //         validation.executionTime = 1;
-    //     }
-    //     else
-    //         assert(queue.replaceValidation(price, validationHash));
-            
-    //     emit ReplaceCancelValidation(msg.sender, validationHash, price);
-    // }
      
 }
  
