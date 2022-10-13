@@ -93,7 +93,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
 
         bool isValidator = members.userMap(validator, Members.UserType(1));
         bool isEnterprise = members.userMap(msg.sender, Members.UserType(0));
-        (bool invited, ) = isValidatorInvited(msg.sender, validator, audit);
+        (bool invited,,) = isValidatorInvited(msg.sender, validator, audit);
         require( !invited , "CF:inviteValidator - Validator has been already invited" );
         require( isEnterprise, "CF:inviteValidator - Only Enterprise user can invite.");
         require( isValidator, "CF:inviteValidator - Only Approved Validators can be invited.");
@@ -189,21 +189,22 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
     * @param enterprise inviting party
     * @param validator address of the validator
     * @param audits types
-    * @return true if invited
-    * @return true if accepted invitation
+    * @return invited true if invited
+    * @return accepted true if accepted invitation
+    * @return deleted true if deleted
     */
-    function isValidatorInvited(address enterprise, address validator, uint256 audits) public view returns (bool, bool) {
+    function isValidatorInvited(address enterprise, address validator, uint256 audits) public view returns (bool invited, bool accepted, bool deleted) {
 
         for (uint i=0; i < invitations[enterprise].length; ++i ){
+            bool del = invitations[enterprise][i].deleted;
             if (invitations[enterprise][i].audits == AuditTypes(audits) && 
-                invitations[enterprise][i].validator == validator &&
-                !invitations[enterprise][i].deleted){
+                invitations[enterprise][i].validator == validator){
                 if (invitations[enterprise][i].acceptanceDate > 0)
-                    return (true, true);
-                return (true, false);
+                    return (true, true, del);
+                return (true, false, del);
             }
         }
-        return (false, false);
+        return (false, false, false);
     }
 
      /**
