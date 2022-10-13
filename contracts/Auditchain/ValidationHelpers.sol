@@ -64,16 +64,24 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
     // returns validation info of winning node
-    function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime){
+    function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime, uint8 status){
 
         require(validationHash != bytes32(0), "VH:returnWinnerStruct - hash can't be 0");
         require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
+        IValidations(validationContract).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint8[] memory status, uint256[] memory validationTimes, string[] memory url,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
-        (,,validationTime,,valUrl,,,,winner,,) = IValidations(validationContract).validations(validationHash);
+        (,,,,,,,,winner,,) = IValidations(validationContract).validations(validationHash);
+
+        for (uint8 i; i< validator.length; i++){
+
+            if (validator[i] == winner)
+                return (url[i], winner, validationTimes[i], status[i]);
+        }
         // valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
 
-        return (valUrl, winner, validationTime);
+        return ('', address(0x0), 0, 0);
 
     }
 
@@ -125,7 +133,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
      */
      function determineWinners(bytes32 validationHash, address validationContract) external  view returns (address[] memory, uint256){
 
-        (address[] memory validator, uint256[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash, validationContract);
+        (address[] memory validator, uint8[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash, validationContract);
 
         uint256 consensus = determineConsensus(status);
         bool[] memory isWinner = new bool[](validator.length);
@@ -161,7 +169,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
     function returnConsensus(bytes32 validationHash, address validationContract) public view returns(uint256) {
 
-        (, uint256[] memory status, ) = insertionSort (validationHash, validationContract);
+        (, uint8[] memory status, ) = insertionSort (validationHash, validationContract);
         uint256 consensus = determineConsensus(status);
 
         return consensus;
@@ -174,9 +182,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
       * @param validationHash hashed document hash with init time
       * @return sorted list of validators with their choices and times
      */
-    function insertionSort(bytes32 validationHash, address validationContract) public view returns (address[] memory, uint256[] memory, uint256[] memory) {
+    function insertionSort(bytes32 validationHash, address validationContract) public view returns (address[] memory, uint8[] memory, uint256[] memory) {
 
-        (address[] memory validator, ,uint256[] memory status, uint256[] memory validationTimes,,) =  IValidations(validationContract).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint8[] memory status, uint256[] memory validationTimes,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         uint length = validationTimes.length;
         
@@ -184,7 +192,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
             
             uint key = validationTimes[i];
             address user = validator[i];
-            uint256 choice = status[i];
+            uint8 choice = status[i];
             uint j = i - 1;
             while ((int(j) > 0) && (validationTimes[j] > key)) {
                 validationTimes[i] = validationTimes[j];
@@ -210,7 +218,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
       * @return consensus which can be 1 or 2. 1 = acceptable 2 = failed
      */
 
-    function determineConsensus(uint256[] memory validation) public pure returns(uint256 ) {
+    function determineConsensus(uint8[] memory validation) public pure returns(uint256 ) {
 
         uint256 yes;
         uint256 no;
@@ -253,7 +261,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
         else    
             validatorsList = cohortFactory.returnValidatorList(enterprise, auditType);
 
-        (address[] memory validatorListActive, ,uint256[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
+        (address[] memory validatorListActive, ,uint8[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         for (uint256 i = 0; i < validatorsList.length; i++) {
             totalStaked += memberHelpers.returnDepositAmount(validatorsList[i]);
