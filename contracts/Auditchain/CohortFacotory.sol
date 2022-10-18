@@ -256,7 +256,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
     * @param audit type of audits
     * @return list of boolean variables with value true for audit types enterprise has initiated cohort, 
     */
-    function returnValidatorList(address enterprise, uint8 audit)public view returns(address[] memory){
+        function returnValidatorList(address enterprise, uint8 audit)public view returns(address[] memory){
 
         require(enterprise != address(0), "CF:returnValidatorList - address can't be 0");
         require(audit <= 5, "CF:returnValidatorList - audit not in range");
@@ -264,7 +264,9 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         address[] memory validatorsList = new address[](returnInvitationCount(enterprise, AuditTypes(audit)));
         uint k;
         for (uint i=0; i < invitations[enterprise].length; ++i ){
-            if (uint(invitations[enterprise][i].audits) == audit && invitations[enterprise][i].acceptanceDate > 0){
+            if (uint(invitations[enterprise][i].audits) == audit 
+                && invitations[enterprise][i].acceptanceDate > 0
+                && ! invitations[enterprise][i].deleted ){
                 validatorsList[k] = invitations[enterprise][i].validator;
                 k++;
             }
