@@ -32,13 +32,19 @@ contract Members is  AccessControlEnumerableUpgradeable {
     uint256 public maxValidators;
     uint256 public minContribution;
 
+    struct USER {
+
+        address user;
+        string name;
+    }   
+
 
      // Audit types to be used. Two types added for future expansion 
     mapping(address => mapping(UserType => string)) public user;
     mapping(address => mapping(UserType => bool)) public userMap;
-    address[] public enterprises;
-    address[] public validators;
-    address[] public dataSubscribers;
+    USER[] public enterprises;
+    USER[] public validators;
+    USER[] public dataSubscribers;
 
     enum UserType {Enterprise, Validator, DataSubscriber}  
     
@@ -179,29 +185,70 @@ contract Members is  AccessControlEnumerableUpgradeable {
    
     /** 
     * @dev add new platform user
-    * @param newUser to add
-    * @param name name of the user
-    * @param userType  type of the user, enterprise, validator or data subscriber
+    * @param _newUser to add
+    * @param _name name of the user
+    * @param _userType  type of the user, enterprise, validator or data subscriber
     */
-    function addUser(address newUser, string memory name, UserType userType) external isController() {
+    function addUser(address _newUser, string memory _name, UserType _userType) external isController() {
+        
 
-        require(!userMap[newUser][userType], "Members:addUser - This user already exist.");
-        user[newUser][userType] = name;
-        userMap[newUser][userType] = true;
+        require(!userMap[_newUser][_userType], "Members:addUser - This user already exist.");
+        user[_newUser][_userType] = _name;
+        userMap[_newUser][_userType] = true;
 
-        if (userType == UserType.DataSubscriber) 
+        USER memory newUser;
+
+        newUser.user = _newUser;
+        newUser.name = _name;
+
+        if (_userType == UserType.DataSubscriber) 
             dataSubscribers.push(newUser);
-        else if (userType == UserType.Validator)
+        else if (_userType == UserType.Validator)
             validators.push(newUser);
-        else if (userType == UserType.Enterprise)
+        else if (_userType == UserType.Enterprise)
             enterprises.push(newUser);
      
-        emit UserAdded(newUser, name, userType);
+        emit UserAdded(_newUser, _name, _userType);
     }
 
-    function returnValidators() external view returns(address[] memory) {
+    function returnValidators() external view returns(address[] memory, string[] memory) {
 
-        return validators;
+        address[] memory u;
+        string[] memory name;
+
+        for (uint256 i; i < validators.length; i++){
+            u[i] = validators[i].user;
+            name[i] = validators[i].name;
+        }
+
+        return (u, name);
+    }
+
+     function returnEnterprises() external view returns(address[] memory, string[] memory) {
+
+        address[] memory u;
+        string[] memory name;
+
+        for (uint256 i; i < enterprises.length; i++){
+            u[i] = enterprises[i].user;
+            name[i] = enterprises[i].name;
+        }
+
+        return (u, name);
+
+    }
+
+     function returnDS() external view returns(address[] memory, string[] memory) {
+
+        address[] memory u;
+        string[] memory name;
+
+        for (uint256 i; i < dataSubscribers.length; i++){
+            u[i] = dataSubscribers[i].user;
+            name[i] = dataSubscribers[i].name;
+        }
+
+        return (u, name);
     }
 
 }
