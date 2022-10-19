@@ -23,6 +23,12 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     uint256 public totalStaked;
     mapping(address => uint256) public outstandingValidations;
 
+    struct USER {
+        address user;
+        string name;
+        uint256 deposit;
+    }
+
     
 
     event LogDepositReceived(address indexed from, uint256 amount);
@@ -154,6 +160,30 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
 
         return (returnDepositAmount(requestor) > price * (outstandingValidations[requestor] ));
     }
+
+
+    function returnMembers(uint8 userType) external view  returns (USER[] memory){
+
+        address[] memory user;
+        string[] memory name;
+        USER[] memory newUser;
+
+        if (userType == 0)
+            (user, name) = members.returnEnterprises();
+        else if (userType == 1)
+            (user, name) = members.returnValidators();
+         else if (userType == 2)
+            (user, name) = members.returnDS();
+
+        for (uint256 i; i< user.length; i++ ){
+            newUser[i].user = user[i];
+            newUser[i].name = name[i];
+            newUser[i].deposit = deposits[user[i]];
+        }
+
+        return newUser;
+    }
+
 
 
 
