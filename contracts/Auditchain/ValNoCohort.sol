@@ -33,15 +33,15 @@ contract ValNoCohort is Validations {
 
         if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
 
-            (,,,valHash,,,,,) =  queue.get(prevVal);
+            (,,,valHash,,,,,,) =  queue.get(prevVal);
 
             while(!done){
                 Validation storage val = validations[valHash];
 
                 if (val.regNum > members.maxValidators()  ){
 
-                    (,prevVal ,,,,,,,) = queue.get(prevVal); 
-                    (,,,valHash,,,,,) =  queue.get(prevVal);
+                    (,prevVal ,,,,,,,,) = queue.get(prevVal); 
+                    (,,,valHash,,,,,,) =  queue.get(prevVal);
                 } else if (val.regNum <= members.maxValidators() && valHash != 0x0 && regP[msg.sender] != prevVal) {
 
                     val.regNum ++;
@@ -56,7 +56,7 @@ contract ValNoCohort is Validations {
 
         }else if (reg[msg.sender] > 0){
             
-            (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
+            (,,,valHash,,,,,,) =  queue.get(reg[msg.sender]);
             if( votes[msg.sender][valHash])
                 valHash == 0x0;
 
