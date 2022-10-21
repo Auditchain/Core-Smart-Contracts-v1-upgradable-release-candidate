@@ -27,20 +27,28 @@ contract ValCohort is Validations {
         bool done;
         bytes32 valHash;
         address user;
+        uint8 auditType;
+        bool found;
         uint256 prevVal = queue.head();
 
         if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
 
-            (,,,valHash,,,user,,) =  queue.get(prevVal);
 
             while(!done){
+                (,,,valHash,,,user,,,auditType) =  queue.get(prevVal);
                 Validation storage val = validations[valHash];
 
-                if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] == 0){
+                uint256[] memory list = cohortFactory.returnValidatorCohortsList(msg.sender, user);
 
-                    (,prevVal ,,,,,,,) = queue.get(prevVal); 
-                    (,,,valHash,,,,,) =  queue.get(prevVal);
-                } else if (cohortFactory.returnValidatorCohortsList(msg.sender, user)[0] > 0 && valHash != 0x0 && regP[msg.sender] != prevVal) {
+                for (uint8 i = 0; i< list.length; i++){
+                    if (list[i] == auditType )
+                        found = true;   
+                }
+
+                if (!found && prevVal != 0){
+                    (,prevVal ,,,,,,,,) = queue.get(prevVal); 
+                    (,,,valHash,,,,,,auditType) =  queue.get(prevVal);
+                } else if (valHash != 0x0 && regP[msg.sender] != prevVal) {
 
                     val.regNum ++;
                     reg[msg.sender] = prevVal;
@@ -54,7 +62,7 @@ contract ValCohort is Validations {
 
         }else if (reg[msg.sender] > 0){
             
-            (,,,valHash,,,,,) =  queue.get(reg[msg.sender]);
+            (,,,valHash,,,,,,) =  queue.get(reg[msg.sender]);
             if( votes[msg.sender][valHash])
                 valHash == 0x0;
 
