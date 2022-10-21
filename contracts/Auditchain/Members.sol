@@ -213,8 +213,8 @@ contract Members is  AccessControlEnumerableUpgradeable {
 
     function returnValidators() external view returns(address[] memory, string[] memory) {
 
-        address[] memory u;
-        string[] memory name;
+        address[] memory u = new address[](validators.length);
+        string[] memory name = new string[](validators.length);
 
         for (uint256 i; i < validators.length; i++){
             u[i] = validators[i].user;
@@ -226,8 +226,8 @@ contract Members is  AccessControlEnumerableUpgradeable {
 
      function returnEnterprises() external view returns(address[] memory, string[] memory) {
 
-        address[] memory u;
-        string[] memory name;
+        address[] memory u = new address[](enterprises.length);
+        string[] memory name = new string[](enterprises.length);
 
         for (uint256 i; i < enterprises.length; i++){
             u[i] = enterprises[i].user;
@@ -240,8 +240,8 @@ contract Members is  AccessControlEnumerableUpgradeable {
 
      function returnDS() external view returns(address[] memory, string[] memory) {
 
-        address[] memory u;
-        string[] memory name;
+        address[] memory u = new address[](dataSubscribers.length);
+        string[] memory name = new string[](dataSubscribers.length);
 
         for (uint256 i; i < dataSubscribers.length; i++){
             u[i] = dataSubscribers[i].user;
