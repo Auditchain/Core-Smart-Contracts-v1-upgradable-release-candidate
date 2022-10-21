@@ -253,7 +253,7 @@ contract Queue is AccessControlEnumerableUpgradeable{
 
 
     /// validator might be able to vote on validations which are not at the head
-    /// of queue and get next queue element which is ready to vote
+    /// of the queue and get next queue element which is ready to vote
     function getValidationToVote(bytes32 _lastValidationHash) external view returns (bytes32) {
 
         uint256 id = findIdForValidationHash(_lastValidationHash);
@@ -270,13 +270,21 @@ contract Queue is AccessControlEnumerableUpgradeable{
     }
 
     /// winning validator can be voted after validation has been completed
-    /// this function checks if first element in queue has been validated
+    /// this function looks for first element in the queue which can be voted
     function getNextValidationToVote() external view returns(bytes32 validationHash) {
 
-        if (objects[head].executed){
-                (,,,validationHash,,,,,,) =   get(head);
-            } else
-                validationHash =  0x0;
+        bool done;
+        bool executed;
+        uint256 prevId = head;
+
+        while (!done){
+
+            (,prevId,,validationHash,,,,,executed,) =   get(prevId);
+
+            if (executed || prevId == 0)
+                done = true;
+        }
+
         return validationHash;
     }
 
