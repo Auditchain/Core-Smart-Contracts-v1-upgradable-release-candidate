@@ -177,7 +177,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
 
         for (uint i=0; i < invitations[enterprise].length; ++i ){
             if (invitations[enterprise][i].audits == audit && 
-                invitations[enterprise][i].acceptanceDate != 0 &&
+                // invitations[enterprise][i].acceptanceDate != 0 &&
                 !invitations[enterprise][i].deleted)
                 count ++;
         }
@@ -265,7 +265,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         uint k;
         for (uint i=0; i < invitations[enterprise].length; ++i ){
             if (uint(invitations[enterprise][i].audits) == audit 
-                && invitations[enterprise][i].acceptanceDate > 0
+                // && invitations[enterprise][i].acceptanceDate > 0
                 && ! invitations[enterprise][i].deleted ){
                 validatorsList[k] = invitations[enterprise][i].validator;
                 k++;
