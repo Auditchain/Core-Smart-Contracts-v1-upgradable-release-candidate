@@ -423,78 +423,78 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   await token.transfer(validator15, validatorTokenAmount, { from: admin });
   await token.transfer(validator16, validatorTokenAmount, { from: admin });
 
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator2 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator3 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator5 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator6 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator7 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: validator8 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber1 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber2 });
-  await token.approve(memberHelpers.address, auditTokenMin, { from: enterprise1 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator1 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator2 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator3 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator4 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator5 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator6 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator7 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: validator8 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber1 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber2 });
+  // await token.approve(memberHelpers.address, auditTokenMin, { from: enterprise1 });
 
 
-  await memberHelpers.stake(auditTokenMin, { from: validator1 });
-  await memberHelpers.stake(auditTokenMin, { from: validator2 });
-  await memberHelpers.stake(auditTokenMin, { from: validator3 });
-  await memberHelpers.stake(auditTokenMin, { from: validator4 });
-  await memberHelpers.stake(auditTokenMin, { from: validator5 });
-  await memberHelpers.stake(auditTokenMin, { from: validator6 });
-  await memberHelpers.stake(auditTokenMin, { from: validator7 });
-  await memberHelpers.stake(auditTokenMin, { from: validator8 });
-  await memberHelpers.stake(auditTokenMin, { from: enterprise1 });
-
-
-
-  await memberHelpers.stake(auditTokenMin, { from: dataSubscriber1 });
-  await memberHelpers.stake(auditTokenMin, { from: dataSubscriber2 });
-
-
-  await nodeOperations.toggleNodeOperator({ from: validator1 });
-  await nodeOperations.toggleNodeOperator({ from: validator2 });
-  await nodeOperations.toggleNodeOperator({ from: validator3 });
-  await nodeOperations.toggleNodeOperator({ from: validator4 });
-
-  await nodeOperations.toggleNodeOperator({ from: validator5 });
-  await nodeOperations.toggleNodeOperator({ from: validator6 });
-  await nodeOperations.toggleNodeOperator({ from: validator7 });
-  await nodeOperations.toggleNodeOperator({ from: validator8 });
-
-  await nodeOperations.toggleCPA({ from: validator1 });
-  await nodeOperations.toggleCPA({ from: validator2 });
-  await nodeOperations.toggleCPA({ from: validator3 });
-  await nodeOperations.toggleCPA({ from: validator4 });
-
-  await nodeOperations.toggleCPA({ from: validator5 });
-  await nodeOperations.toggleCPA({ from: validator6 });
-  await nodeOperations.toggleCPA({ from: validator7 });
-  await nodeOperations.toggleCPA({ from: validator8 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator1 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator2 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator3 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator4 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator5 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator6 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator7 });
+  // await memberHelpers.stake(auditTokenMin, { from: validator8 });
+  // await memberHelpers.stake(auditTokenMin, { from: enterprise1 });
 
 
 
+  // await memberHelpers.stake(auditTokenMin, { from: dataSubscriber1 });
+  // await memberHelpers.stake(auditTokenMin, { from: dataSubscriber2 });
 
 
-  await cohortFactory.inviteValidator(validator1, 1, { from: dataSubscriber1 });
-  await cohortFactory.inviteValidator(validator2, 1, { from: dataSubscriber1 });
-  await cohortFactory.inviteValidator(validator3, 1, { from: dataSubscriber1 });
+  // await nodeOperations.toggleNodeOperator({ from: validator1 });
+  // await nodeOperations.toggleNodeOperator({ from: validator2 });
+  // await nodeOperations.toggleNodeOperator({ from: validator3 });
+  // await nodeOperations.toggleNodeOperator({ from: validator4 });
 
-  await cohortFactory.inviteValidator(validator5, 1, { from: dataSubscriber2 });
-  await cohortFactory.inviteValidator(validator6, 1, { from: dataSubscriber2 });
-  await cohortFactory.inviteValidator(validator7, 1, { from: dataSubscriber2 });
+  // await nodeOperations.toggleNodeOperator({ from: validator5 });
+  // await nodeOperations.toggleNodeOperator({ from: validator6 });
+  // await nodeOperations.toggleNodeOperator({ from: validator7 });
+  // await nodeOperations.toggleNodeOperator({ from: validator8 });
 
-  await cohortFactory.acceptInvitation(dataSubscriber1, 0, { from: validator1 });
-  await cohortFactory.acceptInvitation(dataSubscriber1, 1, { from: validator2 });
-  await cohortFactory.acceptInvitation(dataSubscriber1, 2, { from: validator3 });
+  // await nodeOperations.toggleCPA({ from: validator1 });
+  // await nodeOperations.toggleCPA({ from: validator2 });
+  // await nodeOperations.toggleCPA({ from: validator3 });
+  // await nodeOperations.toggleCPA({ from: validator4 });
+
+  // await nodeOperations.toggleCPA({ from: validator5 });
+  // await nodeOperations.toggleCPA({ from: validator6 });
+  // await nodeOperations.toggleCPA({ from: validator7 });
+  // await nodeOperations.toggleCPA({ from: validator8 });
 
 
-  await cohortFactory.acceptInvitation(dataSubscriber2, 0, { from: validator5 });
-  await cohortFactory.acceptInvitation(dataSubscriber2, 1, { from: validator6 });
-  await cohortFactory.acceptInvitation(dataSubscriber2, 2, { from: validator7 });
 
-  await cohortFactory.createCohort(1, { from: dataSubscriber1 });
-  await cohortFactory.createCohort(1, { from: dataSubscriber2 });
+
+
+  // await cohortFactory.inviteValidator(validator1, 1, { from: dataSubscriber1 });
+  // await cohortFactory.inviteValidator(validator2, 1, { from: dataSubscriber1 });
+  // await cohortFactory.inviteValidator(validator3, 1, { from: dataSubscriber1 });
+
+  // await cohortFactory.inviteValidator(validator5, 1, { from: dataSubscriber2 });
+  // await cohortFactory.inviteValidator(validator6, 1, { from: dataSubscriber2 });
+  // await cohortFactory.inviteValidator(validator7, 1, { from: dataSubscriber2 });
+
+  // await cohortFactory.acceptInvitation(dataSubscriber1, 0, { from: validator1 });
+  // await cohortFactory.acceptInvitation(dataSubscriber1, 1, { from: validator2 });
+  // await cohortFactory.acceptInvitation(dataSubscriber1, 2, { from: validator3 });
+
+
+  // await cohortFactory.acceptInvitation(dataSubscriber2, 0, { from: validator5 });
+  // await cohortFactory.acceptInvitation(dataSubscriber2, 1, { from: validator6 });
+  // await cohortFactory.acceptInvitation(dataSubscriber2, 2, { from: validator7 });
+
+  // await cohortFactory.createCohort(1, { from: dataSubscriber1 });
+  // await cohortFactory.createCohort(1, { from: dataSubscriber2 });
 
 
 
