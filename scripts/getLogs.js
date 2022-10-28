@@ -288,11 +288,11 @@ async function LogRewardsDepositedAfterProvidedBlock(filter, filter2) {
 
 
 
-async function CohortCreated(filter) {
+async function CohortCreated(filter1, filter2) {
 
     try {
         const result = await cohortFactory.getPastEvents('CohortCreated', {
-            filter: { enterprise: filter },
+            filter: { enterprise: filter1, audits:filter2 },
             fromBlock: 0,
             toBlock: 'latest'
         });
@@ -513,7 +513,7 @@ async function ValidatorInvited(filter1, filter2) {
 async function PaymentProcessed(filter) {
 
     try {
-        const result = await gov.getPastEvents('PaymentProcessed', {
+        const result = await cohort.getPastEvents('PaymentProcessed', {
             filter: { winner: filter },
             fromBlock: 0,
             toBlock: 'latest'
@@ -983,9 +983,11 @@ app.get('/ValidatorValidated', function (req, res) {
 
 app.get('/CohortCreated', function (req, res) {
 
-    let filter = req.query.filter;
+    let filter1 = req.query.filter1;
+    let filter2 = req.query.filter2;
 
-    CohortCreated(filter).then(async function (returnedData) {
+
+    CohortCreated(filter1, filter2).then(async function (returnedData) {
         res.end(JSON.stringify(returnedData));
     }).catch(function (err) {
         console.log(err);
