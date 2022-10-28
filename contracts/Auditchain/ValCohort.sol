@@ -28,26 +28,20 @@ contract ValCohort is Validations {
         bytes32 valHash;
         address user;
         uint8 auditType;
-        bool found;
         uint256 prevVal = queue.head();
 
         if ( queue.returnQueueSize() > 0 && reg[msg.sender] == 0 ){
 
 
+            (,,,valHash,,,user,,,auditType) =  queue.get(prevVal);
             while(!done){
-                (,,,valHash,,,user,,,auditType) =  queue.get(prevVal);
                 Validation storage val = validations[valHash];
 
-                uint256[] memory list = cohortFactory.returnValidatorCohortsList(msg.sender, user);
+               (,bool isInvited) = cohortFactory.isValidatorInvited(user, msg.sender, auditType);
 
-                for (uint8 i = 0; i< list.length; i++){
-                    if (list[i] == auditType )
-                        found = true;   
-                }
-
-                if (!found && prevVal != 0){
+                if ((!isInvited || regP[msg.sender] == prevVal) && prevVal != 0 ){
                     (,prevVal ,,,,,,,,) = queue.get(prevVal); 
-                    (,,,valHash,,,,,,auditType) =  queue.get(prevVal);
+                    (,,,valHash,,,user,,,auditType) =  queue.get(prevVal);
                 } else if (valHash != 0x0 && regP[msg.sender] != prevVal) {
 
                     val.regNum ++;
