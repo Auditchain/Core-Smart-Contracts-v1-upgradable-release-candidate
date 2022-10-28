@@ -30,13 +30,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         uint256 invitationDate;      
         uint256 acceptanceDate;
         AuditTypes audits;
-        // address cohort;
-        bool deleted;
     }
-
-    // struct Cohorts {
-    //     AuditTypes audits;
-    // }
 
     mapping(address => uint256[]) public cohortList;
     mapping(address => mapping(uint256=>bool)) public cohortMap;
@@ -50,7 +44,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
 
     event ValidatorInvited(address  inviting, address indexed invitee, AuditTypes indexed audits, uint256 invitationNumber);
     event InvitationAccepted(address indexed validator, uint256 invitationNumber);
-    event CohortCreated(address indexed enterprise, uint256 audits);
+    event CohortCreated(address indexed enterprise, uint256 indexed audits);
     event UpdateMinValidatorsPerCohort(uint256 minValidatorPerCohort, AuditTypes audits);
     event ValidatorCleared(address validator, AuditTypes audit, address enterprise);
 
@@ -93,7 +87,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
 
         bool isValidator = members.userMap(validator, Members.UserType(1));
         bool isEnterprise = members.userMap(msg.sender, Members.UserType(0));
-        (bool invited,,) = isValidatorInvited(msg.sender, validator, audit);
+        (bool invited,) = isValidatorInvited(msg.sender, validator, audit);
         require( !invited , "CF:inviteValidator - Validator has been already invited" );
         require( isEnterprise, "CF:inviteValidator - Only Enterprise user can invite.");
         require( isValidator, "CF:inviteValidator - Only Approved Validators can be invited.");
@@ -138,18 +132,30 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         emit InvitationAccepted(msg.sender, invitationNumber);
     }
 
-    function clearInvitationRemoveValidator(address validator, AuditTypes audit) external  returns (bool) {
+    function clearInvitationRemoveValidator(address validator, AuditTypes audit) external   {
 
         for (uint256 i = 0; i < invitations[msg.sender].length; i++){
             if (invitations[msg.sender][i].audits == audit && invitations[msg.sender][i].validator ==  validator){
-                invitations[msg.sender][i].deleted = true;                
+                // validatorCohortList[invitations[msg.sender][i].validator ][msg.sender] = AuditTypes(0) ;
+
+                clearValidatorAudits(msg.sender, invitations[msg.sender][i].validator , audit);
+                invitations[msg.sender][i].validator = invitations[msg.sender][invitations[msg.sender].length - 1].validator;
+
+                invitations[msg.sender].pop();
                 emit ValidatorCleared(validator, audit, msg.sender);
-                return true;
             }
         }
+    }
 
+    function clearValidatorAudits(address enterprise, address validator, AuditTypes auditType) internal {
 
-        revert("This invitation doesn't exist");
+        for (uint256 i; i < validatorCohortList[validator][enterprise].length; i++){
+
+            if (validatorCohortList[validator][enterprise][i] == auditType)
+                validatorCohortList[validator][enterprise][i] = AuditTypes(0);
+                validatorCohortList[validator][enterprise].pop();
+
+        }
     }
 
     /**
@@ -176,9 +182,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         uint256 count;
 
         for (uint i=0; i < invitations[enterprise].length; ++i ){
-            if (invitations[enterprise][i].audits == audit && 
-                // invitations[enterprise][i].acceptanceDate != 0 &&
-                !invitations[enterprise][i].deleted)
+            if (invitations[enterprise][i].audits == audit)
                 count ++;
         }
         return count;
@@ -191,20 +195,18 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
     * @param audits types
     * @return invited true if invited
     * @return accepted true if accepted invitation
-    * @return deleted true if deleted
     */
-    function isValidatorInvited(address enterprise, address validator, uint256 audits) public view returns (bool invited, bool accepted, bool deleted) {
+    function isValidatorInvited(address enterprise, address validator, uint256 audits) public view returns (bool invited, bool accepted) {
 
         for (uint i=0; i < invitations[enterprise].length; ++i ){
-            bool del = invitations[enterprise][i].deleted;
             if (invitations[enterprise][i].audits == AuditTypes(audits) && 
                 invitations[enterprise][i].validator == validator){
                 if (invitations[enterprise][i].acceptanceDate > 0)
-                    return (true, true, del);
-                return (true, false, del);
+                    return (true, true);
+                return (true, false);
             }
         }
-        return (false, false, false);
+        return (false, false);
     }
 
      /**
@@ -223,8 +225,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         require(audits <= 5, "CF:isValidatorInvitedNumber - audit not in range");
 
         if (invitations[enterprise][invitNumber].audits == AuditTypes(audits) && 
-            invitations[enterprise][invitNumber].validator == validator &&
-            !invitations[enterprise][invitNumber].deleted){
+            invitations[enterprise][invitNumber].validator == validator){
             if (invitations[enterprise][invitNumber].acceptanceDate > 0)
                 return (true, true);
             return (true, false);
@@ -264,9 +265,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         address[] memory validatorsList = new address[](returnInvitationCount(enterprise, AuditTypes(audit)));
         uint k;
         for (uint i=0; i < invitations[enterprise].length; ++i ){
-            if (uint(invitations[enterprise][i].audits) == audit 
-                // && invitations[enterprise][i].acceptanceDate > 0
-                && ! invitations[enterprise][i].deleted ){
+            if (uint(invitations[enterprise][i].audits) == audit){
                 validatorsList[k] = invitations[enterprise][i].validator;
                 k++;
             }
