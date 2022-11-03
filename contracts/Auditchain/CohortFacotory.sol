@@ -224,12 +224,13 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         require(validator != address(0), "CF:isValidatorInvitedNumber - validtor can't be 0");
         require(audits <= 5, "CF:isValidatorInvitedNumber - audit not in range");
 
-        if (invitations[enterprise][invitNumber].audits == AuditTypes(audits) && 
-            invitations[enterprise][invitNumber].validator == validator){
-            if (invitations[enterprise][invitNumber].acceptanceDate > 0)
-                return (true, true);
-            return (true, false);
-        }
+        if (invitNumber < invitations[enterprise].length)
+            if (invitations[enterprise][invitNumber].audits == AuditTypes(audits) && 
+                invitations[enterprise][invitNumber].validator == validator){
+                if (invitations[enterprise][invitNumber].acceptanceDate > 0)
+                    return (true, true);
+                return (true, false);
+            } 
         return (false, false);
     }
 
