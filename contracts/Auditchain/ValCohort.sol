@@ -38,8 +38,9 @@ contract ValCohort is Validations {
                 Validation storage val = validations[valHash];
 
                (,bool isInvited) = cohortFactory.isValidatorInvited(user, msg.sender, auditType);
+               (ValidationStatus valSt,) = isValidated(valHash);
 
-                if ((!isInvited || regP[msg.sender] == prevVal) && prevVal != 0 ){
+                if ((!isInvited || regP[msg.sender] == prevVal || valSt != ValidationStatus.Undefined ) && prevVal != 0 ){
                     (,prevVal ,,,,,,,,) = queue.get(prevVal); 
                     (,,,valHash,,,user,,,auditType) =  queue.get(prevVal);
                 } else if (valHash != 0x0 && regP[msg.sender] != prevVal) {
