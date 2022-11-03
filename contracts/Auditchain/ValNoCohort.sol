@@ -38,7 +38,9 @@ contract ValNoCohort is Validations {
             while(!done){
                 Validation storage val = validations[valHash];
 
-                if (val.regNum > members.maxValidators()  ){
+                (ValidationStatus valSt,) = isValidated(valHash);
+
+                if (val.regNum > members.maxValidators() || valSt != ValidationStatus.Undefined  ){
 
                     (,prevVal ,,,,,,,,) = queue.get(prevVal); 
                     (,,,valHash,,,,,,) =  queue.get(prevVal);
