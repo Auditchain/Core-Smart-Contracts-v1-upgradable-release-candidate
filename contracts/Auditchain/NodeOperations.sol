@@ -326,7 +326,7 @@ contract NodeOperations is AccessControl {
     * @dev called by the Validations contract to increase delegated stake rewards and referral rewards
     * @param validator - validator for whom values are increased
     */
-    function increaseDelegatedStakeRewards(address validator) external isController("increaseDelegatedStakeRewards") returns(bool) {
+    function increaseDSRewards(address validator) external isController("increaseDSRewards") returns(bool) {
         uint256 referringReward;
 
         for (uint256 i = 0; i < nodeOpStruct[validator].delegations.length ; i++) {

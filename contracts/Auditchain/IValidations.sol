@@ -9,7 +9,6 @@ interface IValidations {
     function returnValidationUrl(bytes32 validationHash, address user) external  view returns(string memory url);
     function returnWinnerPoints(bytes32 validationHash, address user) external  view returns(uint256 plus, uint256 minus);
     function selectWinner(bytes32 validationHash, address[] memory winners) external view returns (address);
-    function returnValidatorList(bytes32 validationHash) external view  returns (address[] memory);
     function validations(bytes32 valHash) external view returns( uint8 auditTypes,
                                                                 address requestor,
                                                                 uint256 validationTime,
@@ -30,7 +29,7 @@ interface IValidations {
         returns (
             address[] memory,
             uint256[] memory,
-            uint256[] memory,
+            uint8[] memory,
             uint256[] memory,
             string[] memory,
             bytes32[] memory
@@ -47,5 +46,6 @@ interface IValidations {
                 uint64 winnerConfirmations,
                 bool paymentSent,
                 address winner);
+
 
 }

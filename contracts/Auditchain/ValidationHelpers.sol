@@ -4,6 +4,7 @@ pragma solidity =0.8.0;
 import "./MemberHelpers.sol";
 import "./IQueue.sol";
 import "./INodeOperations.sol";
+import "./ICohortFactory.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 
@@ -15,19 +16,20 @@ contract ValidationHelpers is AccessControlUpgradeable {
     
     enum ValidationStatus {Undefined, Yes, No}   // Validation can be approved or disapproved. Initial status is undefined.
     MemberHelpers public memberHelpers;
-    IQueue public queue;
     INodeOperations public nodeOP;
+    ICohortFactory public cohortFactory;
 
     mapping(address => bool) public valAddresses;
     bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
-
-
     event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
 
 
-    function initialize(address _memberHelpers, address _queue) external  {
+
+    // event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
+
+
+    function initialize(address _memberHelpers) external  {
         memberHelpers = MemberHelpers(_memberHelpers);
-        queue = IQueue(_queue);
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
     // allows on setting of validation contract address
@@ -37,10 +39,16 @@ contract ValidationHelpers is AccessControlUpgradeable {
         valAddresses[_valAddress] = true;
     }
 
-        function setNodeOpAddress(address _nodeOpAddress) external {
+    function setNodeOpAddress(address _nodeOpAddress) external {
         require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setNodeOpAddress - Caller is not a controller");
         require(_nodeOpAddress != address(0), "VH:setNodeOpAddress - address can't be 0");
         nodeOP= INodeOperations(_nodeOpAddress);
+    }
+
+    function setCohortFactoryAddress(address _cohortFactoryAddress) external {
+        require(hasRole(CONTROLLER_ROLE, msg.sender), "VH:setCohortFactoryAddress - Caller is not a controller");
+        require(_cohortFactoryAddress != address(0), "VH:setCohortFactoryAddress - address can't be 0");
+        cohortFactory= ICohortFactory(_cohortFactoryAddress);
     }
 
     // allows verification of existing validation by comparing its init time and document hash
@@ -56,16 +64,24 @@ contract ValidationHelpers is AccessControlUpgradeable {
     }
 
     // returns validation info of winning node
-    function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime){
+    function returnWinnerStruct(bytes32 validationHash, address validationContract)external view returns (string memory valUrl, address winner, uint256 validationTime, uint8 status){
 
         require(validationHash != bytes32(0), "VH:returnWinnerStruct - hash can't be 0");
         require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
+        IValidations(validationContract).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint8[] memory status, uint256[] memory validationTimes, string[] memory url,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
-        (,,validationTime,,valUrl,,,,winner,,) = IValidations(validationContract).validations(validationHash);
+        (,,,,,,,,winner,,) = IValidations(validationContract).validations(validationHash);
+
+        for (uint8 i; i< validator.length; i++){
+
+            if (validator[i] == winner)
+                return (url[i], winner, validationTimes[i], status[i]);
+        }
         // valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
 
-        return (valUrl, winner, validationTime);
+        return ('', address(0x0), 0, 0);
 
     }
 
@@ -75,7 +91,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
      * @param price - new price, if price is 0 only remove request
      * @param validationHash validation hash for request
      */
-    function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract) external {
+    function replaceCancelValidation(uint256 price, bytes32 validationHash, address validationContract, address queueContract) external {
 
         require(validationHash != bytes32(0), "VH:replaceCancelValidation-  Validation Hash can't be 0");
         require(valAddresses[validationContract], "VH:replaceCancelValidation - val contract not registered");
@@ -84,9 +100,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
         require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
         if (price == 0)
-            assert(queue.removeFromQueue(validationHash));
+            assert(IQueue(queueContract).removeFromQueue(validationHash));
         else
-            assert(queue.replaceValidation(price, validationHash));
+            assert(IQueue(queueContract).replaceValidation(price, validationHash));
             
         emit ReplaceCancelValidation(msg.sender, validationHash, price);
     }
@@ -115,9 +131,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
       *@dev find out who won the validation race 
       *@param validationHash - hashed document hash with init time
      */
-     function determineWinners(bytes32 validationHash) external  view returns (address[] memory, uint256){
+     function determineWinners(bytes32 validationHash, address validationContract) external  view returns (address[] memory, uint256){
 
-        (address[] memory validator, uint256[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash);
+        (address[] memory validator, uint8[] memory status, uint256[] memory validationTimes) = insertionSort (validationHash, validationContract);
 
         uint256 consensus = determineConsensus(status);
         bool[] memory isWinner = new bool[](validator.length);
@@ -151,15 +167,24 @@ contract ValidationHelpers is AccessControlUpgradeable {
         return (winners, consensus);
     }
 
+    function returnConsensus(bytes32 validationHash, address validationContract) public view returns(uint256) {
+
+        (, uint8[] memory status, ) = insertionSort (validationHash, validationContract);
+        uint256 consensus = determineConsensus(status);
+
+        return consensus;
+
+    }
+
 
     /**
       * @dev  used during determination of validation winner
       * @param validationHash hashed document hash with init time
       * @return sorted list of validators with their choices and times
      */
-    function insertionSort(bytes32 validationHash) internal view returns (address[] memory, uint256[] memory, uint256[] memory) {
+    function insertionSort(bytes32 validationHash, address validationContract) public view returns (address[] memory, uint8[] memory, uint256[] memory) {
 
-        (address[] memory validator, ,uint256[] memory status, uint256[] memory validationTimes,,) =  IValidations(msg.sender).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint8[] memory status, uint256[] memory validationTimes,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         uint length = validationTimes.length;
         
@@ -167,7 +192,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
             
             uint key = validationTimes[i];
             address user = validator[i];
-            uint256 choice = status[i];
+            uint8 choice = status[i];
             uint j = i - 1;
             while ((int(j) > 0) && (validationTimes[j] > key)) {
                 validationTimes[i] = validationTimes[j];
@@ -193,7 +218,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
       * @return consensus which can be 1 or 2. 1 = acceptable 2 = failed
      */
 
-    function determineConsensus(uint256[] memory validation) public pure returns(uint256 ) {
+    function determineConsensus(uint8[] memory validation) public pure returns(uint256 ) {
 
         uint256 yes;
         uint256 no;
@@ -220,7 +245,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
     * @param validationHash - consist of hash of hashed document and timestamp
     * @return number representing current participation level in percentage
     */
-    function calculateVoteQuorum(bytes32 validationHash, address validationContract)external view returns (uint256)
+    function calculateVoteQuorum(bytes32 validationHash, address validationContract, address enterprise, uint8 auditType)external view returns (uint256)
     {
 
         require(validationHash != bytes32(0), "VH:calculateVoteQuorum - hash can't be 0");
@@ -229,8 +254,14 @@ contract ValidationHelpers is AccessControlUpgradeable {
         uint256 totalStaked;
         uint256 currentlyVoted;
 
-        address[] memory validatorsList = IValidations(validationContract).returnValidatorList(validationHash);
-        (address[] memory validatorListActive, ,uint256[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
+        address[] memory validatorsList;
+
+        if (auditType == 0)
+            validatorsList = nodeOP.returnNodeOperators();
+        else    
+            validatorsList = cohortFactory.returnValidatorList(enterprise, auditType);
+
+        (address[] memory validatorListActive, ,uint8[] memory choice,,,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         for (uint256 i = 0; i < validatorsList.length; i++) {
             totalStaked += memberHelpers.returnDepositAmount(validatorsList[i]);
@@ -264,4 +295,24 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
 
  
+    function verifyValidate(bool valTime, bool choice, bool userType, address caller) public view returns (bool) {
+
+        require(userType, "VNC:validate - not authorized.");
+        require(valTime,"VNC:validate - params don't match.");
+        require(choice, "VNC:validate - validated already.");
+        require(nodeOP.returnDelegatorLink(caller) == address(0x0), "VNC:validate - delegated stake, can't validate");
+        require(nodeOP.isNodeOperator(caller),"VNC:validate - not a node operator");
+
+        return true;
+
+    }
+
+    function verifyInit(bool docSize, uint256 price, bool userType, address caller) public view returns (bool) {
+
+        require(docSize, "VNC:initVal - Doc hash value can't be 0");
+        require(memberHelpers.checkIfRequestorHasFunds(caller, price),"VNC:initVal - Deposit additional funds.");
+        require(userType,"VNC:initVal - Register as data subscriber");
+        return true;
+
+    }
 }

@@ -11,6 +11,7 @@ const HDWalletProvider = require("@truffle/hdwallet-provider");
 
 const MNEMONIC = process.env.MNEMONIC
 const INFURA_KEY = process.env.INFURA_KEY
+const ETHERSCAN = process.env.ETHERSCAN;
 
 console.log("Infura key:" + process.env.INFURA_KEY);
 
@@ -90,7 +91,7 @@ module.exports = {
 
     },
     matic: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://polygon-mumbai.infura.io/v3/5250187d69d747f392fcf1d32bbbc64a"),
+      provider: () => new HDWalletProvider(MNEMONIC, "https://polygon-mumbai.infura.io/v3/" + INFURA_KEY),
       networkCheckTimeout: 10000,
       ChainID: 80001,
       network_id: 80001,
@@ -100,7 +101,7 @@ module.exports = {
       gasPrice: 31000000000,
     },
     polygon: {
-      provider: () => new HDWalletProvider(MNEMONIC, "https://polygon-mainnet.infura.io/v3/5250187d69d747f392fcf1d32bbbc64a"),
+      provider: () => new HDWalletProvider(MNEMONIC, "https://polygon-mainnet.infura.io/v3/" + INFURA_KEY),
       networkCheckTimeout: 10000,
       ChainID: 137,
       network_id: 137,
@@ -127,7 +128,7 @@ module.exports = {
       },
       gas: 6721975,
       gasPrice: 65000000000,
-      etherscan: "SK5S23AZ5KVEZKDASHKMBZ11Z4DQ5JN5SZ",
+      etherscan: ETHERSCAN,
     },
     mocha: {
       reporter: 'eth-gas-reporter',
