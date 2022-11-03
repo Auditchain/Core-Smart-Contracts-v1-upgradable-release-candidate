@@ -134,15 +134,14 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
   let nodeOperations = await NodeOperations.deployed();
   console.log("node operations address:", nodeOperations.address);
 
-
-  await deployProxy(ValidationHelpers, [memberHelpers.address, queue.address], { deployer, initializer: 'initialize' });
+  await deployProxy(ValidationHelpers, [memberHelpers.address], { deployer, initializer: 'initialize' });
   let validationHelpers = await ValidationHelpers.deployed();
   console.log("validation helpers address:", validationHelpers.address);
 
-  await deployProxy(Validations, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address], { deployer, initializer: 'initialize' });
+  
+  await deployProxy(Validations, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queue.address, cohortFactory.address], { deployer, initializer: 'initialize' });
   let validations = await Validations.deployed();
   console.log("no cohort address:", validations.address);
-
 
 
   await deployProxy(ValidationsCohort, [members.address, memberHelpers.address, nodeOperations.address, validationHelpers.address, queueCohort.address, cohortFactory.address], { deployer, initializer: 'initialize' });
@@ -268,6 +267,9 @@ module.exports = async function (deployer, network, accounts) { // eslint-disabl
 
   // await memberHelpers.setValidation(validations.address, { from: admin });
   // console.log('memberHelpers.setValidation(cohort.address, { from: admin });');
+
+  await validationHelpers.setNodeOpAddress(nodeOperations.address, {from:admin});
+  console.log('ValidationHelpers.setNodeOpAddress(nodeOperations.address, { from: admin });');
 
   await members.grantRole(SETTER_ROLE, timelock.address, { from: admin });
   console.log('members.grantRole(SETTER_ROLE, timelock.address, { from: admin });');
