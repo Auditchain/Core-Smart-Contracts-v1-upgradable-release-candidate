@@ -43,7 +43,7 @@ const Members = require('../build/contracts/Members.json');
 const Token = require('../build/contracts/AuditToken.json');
 const MemberHelpers = require('../build/contracts/MemberHelpers.json');
 const NodeOperations = require('../build/contracts/NodeOperations.json');
-const NoCohort = require('../build/contracts/ValidationsCohort.json');
+const NoCohort = require('../build/contracts/ValNoCohort.json');
 const TimeLock = require('../build/contracts/Timelock.json');
 // const Cohort = require('../build/contracts/Validations.json');
 // const DepositModifiers = require('../build/contracts/DepositModifiers.json');
@@ -61,6 +61,18 @@ let CONTROLLER_ROLE ;
 let MINTER_ROLE ;
 let SETTER_ROLE ;
 
+const tokenAmount1 = "9000000000000000000000000";
+const tokenAmount2 = "8500000000000000000000000";
+const tokenAmount3 = "10000000000000000000000000";
+const tokenAmount4 = "44443332220000000000000000";
+const tokenAmount5 = "14443332220000000000000000";
+const tokenAmount6 = "9000000000000000000000000";
+let initialToken = "250000000000000000000000000";
+
+
+
+const validatorTokenAmount = "25000000000000000000000";
+
 
 async function setUpContracts(account) {
 
@@ -76,7 +88,7 @@ async function setUpContracts(account) {
     timelock = new web3.eth.Contract(TimeLock["abi"], timelockAddress);
     // cohort = new web3.eth.Contract(Cohort["abi"], cohortAddress);
     // depositModifiers = new web3.eth.Contract(DepositModifiers["abi"], depositModifiersAddrss);
-    cohortFactory = new web3.eth.Contract(CohortFactory["abi"], cohortFactoryAddress);
+    // cohortFactory = new web3.eth.Contract(CohortFactory["abi"], cohortFactoryAddress);
 
 
     CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
@@ -128,7 +140,6 @@ let validator14 = "0x9596a77DA1d79Cde87E1a499188E1dA8e5A4Fc20"; // 28
 let validator15 = "0xc439417449a0F05dc45dB2fA8f76571169Fb7E75"; // 29
 let validator16 = "0xC56793118415Cf8E900195eFd584A0364e0429b4"; // 30
 
-const validatorTokenAmount = "25000000000000000000000"
 
 
 
@@ -309,68 +320,90 @@ async function deploy() {
 
 
 
-    await token.methods.transfer(dataSubscriber1, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber2, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber3, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber4, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber5, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber6, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber7, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber8, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber9, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber10, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(dataSubscriber11, validatorTokenAmount).send({from: admin });
-
-
-    await token.methods.transfer(validator1, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator2, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator3, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator4, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator5, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator6, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator7, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator8, validatorTokenAmount).send({from: admin });
-
-
-    await token.methods.transfer(validator9, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator10, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator11, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator12, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator13, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator14, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator15, validatorTokenAmount).send({from: admin });
-    await token.methods.transfer(validator16, validatorTokenAmount).send({from: admin });
-
-
-    // await token.methods.mint(dataSubscriber1, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber2, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber3, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber4, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber5, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber6, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber7, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber8, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber9, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber10, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(dataSubscriber11, validatorTokenAmount).send( { from: admin });
-
-
-    // await token.methods.mint(validator1, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator2, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator3, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator4, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator5, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator6, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator7, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator8, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator9, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator10, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator11, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator12, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator13, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator14, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator15, validatorTokenAmount).send( { from: admin });
-    // await token.methods.mint(validator16, validatorTokenAmount).send( { from: admin });
+    // await members.addUser(validator15, "Validator 15", 1, { from: admin });
+    // console.log('await members.addUser(validator15, "Validator 15", 1, { from: admin });');
+  
+    // await members.addUser(validator16, "Validator 16", 1, { from: admin });
+    // console.log('await members.addUser(validator16, "Validator 16", 1, { from: admin });');
+  
+  
+  
+    // await members.addUser(dataSubscriber1, "Enterprise 1", 2, { from: admin });
+    // console.log('await members.addUser(dataSubscriber1, "Enterprise 1", 2, { from: admin });');
+  
+    // await members.addUser(dataSubscriber2, "Enterprise 2", 2, { from: admin });
+    // console.log('await members.addUser(dataSubscriber2, "Enterprise 2", 2, { from: admin });');
+  
+    await members.methods.addUser(dataSubscriber3, "Enterprise 3", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber3, "Enterprise 3", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber4, "Enterprise 4", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber4, "Enterprise 4", 0).send({from:admin});');
+  
+  
+    await members.methods.addUser(dataSubscriber5, "Enterprise 5", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber5, "Enterprise 5", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber6, "Enterprise 6", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber6, "Enterprise 6", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber7, "Enterprise 7", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber7, "Enterprise 7", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber8, "Enterprise 8", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber8, "Enterprise 8", 0).send({from:admin});');
+  
+  
+    await members.methods.addUser(dataSubscriber9, "Enterprise 9", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber9, "Enterprise 9", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber10, "Enterprise 10", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber10, "Enterprise 10", 0).send({from:admin});');
+  
+    await members.methods.addUser(dataSubscriber11, "Enterprise 11", 0).send({from:admin});
+    console.log('await members.methods.addUser(dataSubscriber11, "Enterprise 11", 0).send({from:admin});');
+  
+    // await members.methods.addUser(enterprise1, "Enterprise Admin", 0).send({from:admin});
+  
+  
+  
+    await token.methods.grantRole(MINTER_ROLE, admin).send({from:admin});
+    await token.methods.mint(admin, initialToken).send({from:admin});
+  
+    await token.methods.transfer(dataSubscriber1, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber2, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber3, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber4, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber5, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber6, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber7, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber8, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber9, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber10, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(dataSubscriber11, validatorTokenAmount).send({from:admin});
+    // await token.methods.transfer(enterprise1, validatorTokenAmount).send({from:admin});
+  
+  
+  
+    await token.methods.transfer(validator1, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator2, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator3, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator4, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator5, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator6, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator7, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator8, validatorTokenAmount).send({from:admin});
+  
+  
+  
+    await token.methods.transfer(validator9, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator10, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator11, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator12, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator13, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator14, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator15, validatorTokenAmount).send({from:admin});
+    await token.methods.transfer(validator16, validatorTokenAmount).send({from:admin});
 
 
     console.log("FINISHED");
