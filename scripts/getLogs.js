@@ -164,7 +164,6 @@ async function LogNonCohortPaymentReceived(filter) {
 
 
 async function LogDataSubscriberValidatorPaid(filter) {
-    HDWalletProvider
 
     try {
         const result = await depositModifiers.getPastEvents('LogDataSubscriberValidatorPaid', {
@@ -309,7 +308,7 @@ async function ValidatorValidated(filter) {
 
     try {
         const result = await noCohort.getPastEvents('ValidatorValidated', {
-            filter: { enterprise: filter },
+            filter: { validator: filter },
             fromBlock: 0,
             toBlock: 'latest'
         });
