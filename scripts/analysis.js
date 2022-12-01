@@ -92,7 +92,7 @@ async function getValidationHistory(ethAddress) {
             { filter: { requestor: ethAddress }, fromBlock: 0, toBlock: "latest", })
 
 
-
+        console.log("Number of validations:", validationExecutedEvent.length);
 
         //   else
         //     validationExecutedEvent = await UseLogsEndpoint('RequestExecutedRequestor', ethAddress); // const validationExecutedEvent = await noCohortContractWeb3.getPastEvents("RequestExecuted",{filter: { audits: 1, requestor: ethAddress },fromBlock: startingBlockNumber,toBlock: "latest",})
@@ -113,16 +113,21 @@ async function getValidationHistory(ethAddress) {
 
             console.log("url:", ipfsBasePrivate + winnerRecord[0]);
 
-            const reportContent1 = (await axios.get(ipfsBasePrivate + winnerRecord[0])).data;
-            const reportUrl = JSON.parse(JSON.stringify(reportContent1))["reportPacioli"];
-            // console.log("reportUrl:", reportUrl);
+            if (winnerRecord[0] != "" && winnerRecord[0] != undefined) {
 
-            // let url = reportUrl.replace("Pacioli.json", '')
-            console.log("pacioli url", reportUrl)
 
-            if (reportUrl != "https://auditchain.infura-ipfs.io/ipfs/Pacioli-failed")
 
-                await verifyCat(reportUrl);
+                const reportContent1 = (await axios.get(ipfsBasePrivate + winnerRecord[0])).data;
+                const reportUrl = JSON.parse(JSON.stringify(reportContent1))["reportPacioli"];
+                // console.log("reportUrl:", reportUrl);
+
+                // let url = reportUrl.replace("Pacioli.json", '')
+                console.log("pacioli url", reportUrl)
+
+                if (reportUrl != "https://auditchain.infura-ipfs.io/ipfs/Pacioli-failed")
+
+                    await verifyCat(reportUrl);
+            }
 
 
             // if (!valid)
@@ -150,7 +155,6 @@ async function getIpfsUrl(reportPacioli) {
     let result = null
     try {
         result = await axios(reportPacioli);
-        console.log('reportPacioli - getIpfsUrl', result.data.cik)
         return result.data.ipfs;
     } catch (error) {
         console.log('Error - getIpfsUrl', error);
@@ -169,10 +173,6 @@ async function verifyCat(url) {
     console.log(pacioliTrace.friendlyName);
     console.log(pacioliTrace.report);
     console.log(pacioliTrace.isValid);
-    console.log(pacioliTrace.cik);
-
-    
-
 
     const { dashboard } = pacioliTrace;
 
@@ -204,7 +204,7 @@ async function verifyCat(url) {
 async function start() {
 
 
-    let val = await getValidationHistory("0xd9689B5f12E166330caff10caD68C9CA1bE9F0c0");
+    let val = await getValidationHistory("0x9596a77DA1d79Cde87E1a499188E1dA8e5A4Fc20");
     // console.log(val);
     process.exit();
 
