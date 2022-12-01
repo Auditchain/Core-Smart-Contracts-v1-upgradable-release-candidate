@@ -6,12 +6,12 @@ let dotenv = require('dotenv').config({ path: './.env' });
 let Web3 = require('web3');
 let ipfsBasePrivate = 'https://auditchain.infura-ipfs.io/ipfs/';
 var DomParser = require('dom-parser');
+fs = require('fs');
 
 parser = new DomParser();
 
-
-
-
+let failedStream;
+let passedStream;
 
 const VALIDATIONS_HELPERS = require('../build/contracts/ValidationHelpers.json');
 const NO_COHORT = require('../build/contracts/ValNoCohort.json');
@@ -91,14 +91,37 @@ async function getValidationHistory(ethAddress) {
         let validationExecutedEvent;
         //   if (mode == "all")
         validationExecutedEvent = await validationsNoCohortContract.getPastEvents("RequestExecuted",
-            { filter: { requestor: ethAddress }, fromBlock: 0, toBlock: "latest", })
+            { fromBlock: 0, toBlock: "latest", })
 
 
 
-
+        console.log("Total Validations:", validationExecutedEvent.length);
         //   else
         //     validationExecutedEvent = await UseLogsEndpoint('RequestExecutedRequestor', ethAddress); // const validationExecutedEvent = await noCohortContractWeb3.getPastEvents("RequestExecuted",{filter: { audits: 1, requestor: ethAddress },fromBlock: startingBlockNumber,toBlock: "latest",})
-        for (let k = 0; k < validationExecutedEvent.length; k++) {
+
+        let line = "friendlyName , address ,analysisURL\n";
+
+        failedStream = fs.createWriteStream('reports/failed.csv', { flags: 'a' });
+
+        failedStream.write(line, err => {
+            if (err) {
+                throw err
+            }
+            console.log('Heading created for failed')
+        })
+
+        passedStream = fs.createWriteStream('reports/passed.csv', { flags: 'a' });
+
+
+        passedStream.write(line, err => {
+            if (err) {
+                throw err
+            }
+            console.log('Heading created for passed.')
+        })
+
+
+        for (let k = 2065; k < validationExecutedEvent.length; k++) {
             const values = validationExecutedEvent[k].returnValues;
 
             const winnerRecord = await validationHelpersContract.methods.returnWinnerStruct(
@@ -115,16 +138,29 @@ async function getValidationHistory(ethAddress) {
 
             console.log("url:", ipfsBasePrivate + winnerRecord[0]);
 
-            const reportContent1 = (await axios.get(ipfsBasePrivate + winnerRecord[0])).data;
-            const reportUrl = JSON.parse(JSON.stringify(reportContent1))["reportPacioli"];
-            // console.log("reportUrl:", reportUrl);
+            if (winnerRecord[0] != "" && winnerRecord[0] != undefined) {
 
-            // let url = reportUrl.replace("Pacioli.json", '')
-            console.log("pacioli url", reportUrl)
 
-            if (reportUrl != "https://auditchain.infura-ipfs.io/ipfs/Pacioli-failed")
+                // const pathArray = pacioliTrace.report.split("/");
+                // const ACanalysisId = pathArray[6];
 
-                await verifyCat(reportUrl);
+                const analysisURL = `https://alpha.auditchain.finance/analysis/${winnerRecord[0].split("/")[0]}`
+
+                console.log("analysis report:", analysisURL);
+                const reportContent1 = (await axios.get(ipfsBasePrivate + winnerRecord[0])).data;
+                const reportUrl = JSON.parse(JSON.stringify(reportContent1))["reportPacioli"];
+                // console.log("reportUrl:", reportUrl);
+
+                // let url = reportUrl.replace("Pacioli.json", '')
+                console.log("pacioli url", reportUrl)
+
+                if (reportUrl != "https://auditchain.infura-ipfs.io/ipfs/Pacioli-failed") {
+
+                    let fac = await verifyCat(reportUrl, analysisURL);
+
+
+                }
+            }
 
 
             // if (!valid)
@@ -163,69 +199,92 @@ async function getIpfsUrl(reportPacioli) {
 }
 
 
-async function verifyCat(url) {
+async function verifyCat(url, analysisURL) {
 
 
 
-    let urlTrace = await getIpfsUrl(url);
-    console.log("urlTrace:", urlTrace);
+    try {
 
-    let pacioliTrace = await getPacioliTrace(urlTrace);
-    console.log(pacioliTrace.friendlyName);
-    console.log("url", pacioliTrace.report);
-    console.log(pacioliTrace.isValid);
+        let urlTrace = await getIpfsUrl(url);
+        console.log("urlTrace:", urlTrace);
 
-
-
-    let report = await axios.get(pacioliTrace.report);
-    // console.log(report.data);
-
-    xmlDoc = parser.parseFromString(report.data, "xml");
-
-
-    let node1 = xmlDoc.getElementsByTagName("identifier")[0];
-
-    y = node1.childNodes;
-    z = y.nodeValue;
-
-    // let att = node1[0].getAttribute('scheme');
-
-    console.log("cik",y[0].text);
-
-    let entityData = await axios.get("https://dev.auditchain.finance/api/list_reporting_styles?cik=" + y[0].text);
-
-    console.log(entityData.data.address);
-
-
-    // const pathArray = pacioliTrace.report.split("/");
-    // const ACanalysisId = pathArray[6];
-    // console.log("cik", ACanalysisId);
+        let pacioliTrace = await getPacioliTrace(urlTrace);
+        console.log(pacioliTrace.friendlyName);
+        console.log("url", pacioliTrace.report);
+        console.log(pacioliTrace.isValid);
 
 
 
-    const { dashboard } = pacioliTrace;
+        let report = await axios.get(pacioliTrace.report);
+        // console.log(report.data);
+
+        xmlDoc = parser.parseFromString(report.data, "xml");
 
 
-    const { calculations, disclosureChecks, fac, modelStructure, noOtherErrors, nonFACassertions, subTypes, xbrl, disclosureMecanics } = dashboard;
-    console.log("fac:", fac);
+        let node1 = xmlDoc.getElementsByTagName("identifier")[0];
 
-    if (fac)
-        facTrue++;
-    else
-        facFalse++;
+        y = node1.childNodes;
+        z = y.nodeValue;
 
-    if (subTypes)
-        subTypesTrue++;
-    else
-        subTypesFalse++;
+        // let att = node1[0].getAttribute('scheme');
 
-    console.log("subTypes true total:", subTypesTrue);
-    console.log("SubTypes false total:", subTypesFalse);
+        console.log("cik", y[0].text);
 
-    console.log("fac true total:", facTrue);
-    console.log("fac false total:", facFalse);
+        let entityData = await axios.get("https://dev.auditchain.finance/api/list_reporting_styles?cik=" + y[0].text);
 
-    return fac
+        console.log(entityData.data.address);
+
+
+        // const pathArray = pacioliTrace.report.split("/");
+        // const ACanalysisId = pathArray[6];
+        // console.log("cik", ACanalysisId);
+
+
+
+        const { dashboard } = pacioliTrace;
+
+
+        const { calculations, disclosureChecks, fac, modelStructure, noOtherErrors, nonFACassertions, subTypes, xbrl, disclosureMecanics } = dashboard;
+        console.log("fac:", fac);
+
+        if (fac)
+            facTrue++;
+        else
+            facFalse++;
+
+        if (subTypes)
+            subTypesTrue++;
+        else
+            subTypesFalse++;
+
+        console.log("subTypes true total:", subTypesTrue);
+        console.log("SubTypes false total:", subTypesFalse);
+
+        console.log("fac true total:", facTrue);
+        console.log("fac false total:", facFalse);
+
+
+        let line = '"' + pacioliTrace.friendlyName + '","' + entityData.data.address + '","' + analysisURL + '"\n';
+        let file;
+
+        if (!fac)
+            file = failedStream;
+        else
+            file = passedStream;
+
+
+        file.write(line, err => {
+            if (err) {
+                throw err
+            }
+            console.log('File is updated.')
+        })
+
+
+        return fac
+    } catch (err) {
+        console.log(`Error:${err}`);
+    }
 
     // console.log(dashboard.fac);
 }
