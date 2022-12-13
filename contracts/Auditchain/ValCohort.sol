@@ -19,6 +19,8 @@ contract ValCohort is Validations {
         address _cohortFact  ) public override {
 
         super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
+        cohort = true;
+
     
     }
 
