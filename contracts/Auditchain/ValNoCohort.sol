@@ -21,6 +21,7 @@ contract ValNoCohort is Validations {
         address _cohortFact  ) public override {
 
         super.initialize(_members, _memberHelpers,_nodeOperations,_validationHelpers, _queue, _cohortFact);
+        cohort = false;
      
     }
 
@@ -50,6 +51,7 @@ contract ValNoCohort is Validations {
                     reg[msg.sender] = prevVal;
                     regP[msg.sender] = prevVal;
                     done = true;
+                    regVal[valHash].push(msg.sender);
                 } else{
                     valHash = 0x0;
                     done = true;
