@@ -51,6 +51,11 @@ contract ValidationHelpers is AccessControlUpgradeable {
         cohortFactory= ICohortFactory(_cohortFactoryAddress);
     }
 
+    function isCohort(address validationContract) internal view returns (bool){
+
+        return IValidations(validationContract).cohort();
+    }
+
     // allows verification of existing validation by comparing its init time and document hash
     function isHashAndTimeCorrect( bytes32 documentHash, uint256 _validationTime) external  view returns (bool){
 
@@ -256,8 +261,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
         address[] memory validatorsList;
 
-        if (auditType == 0)
-            validatorsList = nodeOP.returnNodeOperators();
+        if (!isCohort(validationContract))
+            // validatorsList = nodeOP.returnNodeOperators();
+            validatorsList = IValidations(validationContract).validators(validationHash);
         else    
             validatorsList = cohortFactory.returnValidatorList(enterprise, auditType);
 
