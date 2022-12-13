@@ -28,6 +28,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
     // Validation can be approved or disapproved. Initial status is undefined.
     enum ValidationStatus { Undefined, Yes, No }
+    bool public cohort;
 
     struct Validation {
         AuditTypes auditTypes;
@@ -53,10 +54,11 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     mapping(address => uint256) public reg;
     mapping(address => uint256) public regP;
     mapping(bytes32 => Validation) public validations; // track each validation
+    mapping(bytes32 => address[]) public regVal;
    
     event ValidationInitialized(address indexed user, bytes32 indexed validationHash, uint256 initTime, bytes32 documentHash, string url, AuditTypes auditType);
     event ValidatorValidated(address indexed validator, bytes32 indexed documentHash, uint256 indexed validationTime, 
-                             ValidationStatus decision, string valUrl);
+                             ValidationStatus decision, string valUrl, bytes32 valHash);
 
     event RequestExecuted(address indexed requestor, bytes32 indexed validationHash, bytes32 documentHash, uint256 consensus, 
                         uint256 timeExecuted, string url, AuditTypes indexed audits);
@@ -225,7 +227,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
 
         assert(nodeOperations.increaseStakeRewards(msg.sender));
         assert(nodeOperations.increaseDSRewards(msg.sender));
-        emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl);
+        emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl, valHash);
         executeValidation(valHash, docHash);
     }
 
@@ -248,7 +250,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         address[] memory validatorsList;
         Validation storage validation = validations[validationHash];
 
-        if (validation.auditTypes == AuditTypes(0))
+        if (!cohort)
             validatorsList =  nodeOperations.returnNodeOperators();
         else 
             validatorsList  = cohortFactory.returnValidatorList(validation.requestor, uint8(validation.auditTypes));
