@@ -6,7 +6,7 @@ import {
 const MEMBERS = artifacts.require('../Members');
 const MEMBER_HELPERS = artifacts.require('../MemberHelpers')
 const TOKEN = artifacts.require('../AuditToken');
-const VALIDATION = artifacts.require('../ValidationsNoCohort');
+const VALIDATION = artifacts.require('../ValNoCohort');
 const NODE_OPERATIONS = artifacts.require('../NodeOperations');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
