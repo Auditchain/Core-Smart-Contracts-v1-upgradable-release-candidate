@@ -196,7 +196,7 @@ contract("NoCohort Validations contract", (accounts) => {
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
             valHash = event.args.validationHash;
-            await validation.registerValidation({ from: validator1 });
+            // await validation.registerValidation({ from: validator1 });
             count++;
 
         })
@@ -330,7 +330,7 @@ contract("NoCohort Validations contract", (accounts) => {
 
 
     describe("Register for validation", async () => {
-        let count = 1000;
+        let count = 2000;
         let validationInitTime;
         let validationHash;
 
@@ -362,6 +362,7 @@ contract("NoCohort Validations contract", (accounts) => {
             assert.strictEqual(event.args.valHash, validationHash);
             assert.strictEqual(event.args.validator, validator1);
             await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
+            await validation.registerValidation({ from: validator1 });
 
         })
 
@@ -380,13 +381,15 @@ contract("NoCohort Validations contract", (accounts) => {
             let event = result.logs[0];
             assert.equal(event.event, 'ValRegistered');
 
-            // console.log("Val hash:", event.args.valHash)
-
-
             assert.strictEqual(event.args.valHash, zeroTransaction);
             assert.strictEqual(event.args.validator, validator5);
 
-            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue and validator registrations
+            await validation.registerValidation({ from: validator1 });
+            await validation.registerValidation({ from: validator2 });
+            await validation.registerValidation({ from: validator3 });
+            await validation.registerValidation({ from: validator4 });
+            await validation.registerValidation({ from: validator5 });
 
         })
 
@@ -395,182 +398,206 @@ contract("NoCohort Validations contract", (accounts) => {
 
     })
 
-    // describe("Check if validator has validated specific document", async () => {
+    describe("Check if validator has validated specific document", async () => {
 
-    //     let validationInitTime;
-    //     let validationHash
-    //     let count = 1;
-    //     let documentHash
+        let validationInitTime;
+        let validationHash
+        let count = 1;
+        let documentHash
 
-    //     beforeEach(async () => {
+        beforeEach(async () => {
 
-    //         count++;
-    //         documentHash = web3.utils.soliditySha3(documentURL + count);
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+            count++;
+            documentHash = web3.utils.soliditySha3(documentURL + count);
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
-    //         let event = result.logs[0];
-    //         assert.equal(event.event, 'ValidationInitialized');
-    //         validationInitTime = event.args.initTime;
-    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValidationInitialized');
+            validationInitTime = event.args.initTime;
+            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
 
-    //     })
+        })
 
 
-    //     it("It should succeed. The return value should be true.", async () => {
+        it("It should succeed. The return value should be true.", async () => {
 
-    //         await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
-    //         let isValidated = await validation.isValidated(validationHash, { from: validator1 });
-    //         assert.strictEqual(isValidated[0].toString(), "1");
-    //     })
+            let isValidated = await validation.isValidated(validationHash, { from: validator1 });
+            assert.strictEqual(isValidated[0].toString(), "1");
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
 
-        // it("It should succeed. The return value should be false.", async () => {
+        })
 
-        //     let isValidated = await validation.isValidated(validationHash, { from: validator1 });
+        it("It should succeed. The return value should be false.", async () => {
 
-        //     assert.strictEqual(isValidated[0].toString(), "0");
-        // })
-    // })
+            let isValidated = await validation.isValidated(validationHash, { from: validator1 });
 
-    // describe("Calculate Vote Quorum", async () => {
+            assert.strictEqual(isValidated[0].toString(), "0");
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
 
-    //     let validationInitTime;
-    //     let validationHash
+        })
+    })
 
-    //     beforeEach(async () => {
+    describe("Calculate Vote Quorum", async () => {
 
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+        let validationInitTime;
+        let validationHash;
+        let count = 111111;
+        let documentHash
 
-    //         let event = result.logs[0];
-    //         assert.equal(event.event, 'ValidationInitialized');
-    //         validationInitTime = event.args.initTime;
-    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
 
-    //     })
 
+        beforeEach(async () => {
 
-    //     it("Should succeed. Calculation is done against valid validation.", async () => {
+            count++;
+            documentHash = web3.utils.soliditySha3(documentURL + count);
+            let result = await validation.initVal(documentHash , documentURL, 1, price, { from: dataSubscriber });
 
-    //         await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
-    //         let quorum = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValidationInitialized');
+            validationInitTime = event.args.initTime;
+            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
+            console.log("val hash:", validationHash)
 
-    //         console.log("quorum:", JSON.stringify(quorum));
-    //         assert.strictEqual(quorum.toString(), "20");
-    //     })
+        })
 
-    //     it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
 
-    //         validationHash = web3.utils.soliditySha3(documentHash, 1, dataSubscriber);
-    //         let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
-    //         assert.strictEqual(result.toString(), "0");
+        it("Should succeed. Calculation is done against valid validation.", async () => {
 
-    //     })
+            let queueSize = await queue.returnQueueSize();
 
-    //     it("Should fail. Calculation is done against valid validation with wrong requestor. ", async () => {
+            console.log("queue size:", queueSize.toString());
 
-    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
-    //         let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
-    //         assert.strictEqual(result.toString(), "0");
 
-    //     })
-    // })
+            let reg = await validation.reg(validator1);
+            console.log("reg:", reg.toString());
 
-    // describe("Collect Validation Results", async () => {
+            let txHash = await validation.registerValidation({ from: validator1 });
+            await validation.registerValidation({ from: validator2 });
+            await validation.registerValidation({ from: validator3 });
 
-    //     let validationInitTime;
-    //     let validationHash
+            console.log("txHash:", txHash.logs[0].args);
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+            let quorum = await validationHelpers.calculateVoteQuorum(txHash.logs[0].args.valHash, validation.address, dataSubscriber, 1);
 
-    //     let count=10;
-    //     let documentHash
+            console.log("quorum:", JSON.stringify(quorum));
+            assert.strictEqual(quorum.toString(), "33");
+        })
 
-    //     beforeEach(async () => {
+            it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
 
-    //         count++;  
-    //         documentHash = web3.utils.soliditySha3(documentURL + count); // prevent same hash
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+                validationHash = web3.utils.soliditySha3(documentHash, 1, dataSubscriber);
+                let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
+                assert.strictEqual(result.toString(), "0");
 
-    //         let event = result.logs[0];
-    //         assert.equal(event.event, 'ValidationInitialized');
-    //         validationInitTime = event.args.initTime;
-    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
+            })
 
-    //     })
+            it("Should fail. Calculation is done against valid validation with wrong requestor. ", async () => {
 
+                validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
+                let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
+                assert.strictEqual(result.toString(), "0");
 
+            })
+    })
 
-    //     it("Should succeed. CollectValidationResults properly returns results", async () => {
+    describe("Collect Validation Results", async () => {
 
-    //         await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+        let validationInitTime;
+        let validationHash
 
-    //         let status = await validation.collectValidationResults(validationHash);
+        let count=10;
+        let documentHash
 
-    //         assert.strictEqual(status[0][0], validator1);
-    //         assert.strictEqual(status[1][0].toString(), auditTokenMin);
-    //         assert.strictEqual(status[2][0].toString(), "1");
-    //         assert.strictEqual(status[3][0].toString(), validationInitTime.toString());
-    //     })
+        beforeEach(async () => {
 
-    //     it("Should succeed. determineConsensus properly determines consensus", async () => {
+            count++;  
+            documentHash = web3.utils.soliditySha3(documentURL + count); // prevent same hash
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
-    //         let result = await validationHelpers.determineConsensus([1, 1, 1, 2]);
-    //         assert.strictEqual(result.toString(), "1");
-    //     })
-    // })
+            let event = result.logs[0];
+            assert.equal(event.event, 'ValidationInitialized');
+            validationInitTime = event.args.initTime;
+            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
 
-    // describe("Change price cancel request", async () => {
+        })
 
-    //     it("Should succeed. it should update price of requested validation", async () => {
 
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
-    //         let event = result.logs[0];
 
-    //         result = await validationHelpers.replaceCancelValidation(replacementPrice, event.args.validationHash, validation.address, { from: dataSubscriber });
-    //         event = result.logs[0];
+        it("Should succeed. CollectValidationResults properly returns results", async () => {
 
-    //         assert.strictEqual(event.args.price.toString(), replacementPrice);
+            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
-    //     })
+            let status = await validation.collectValidationResults(validationHash);
 
-    //     it("Should fail. it shouldn't update price of requested validation by different requestor", async () => {
+            assert.strictEqual(status[0][0], validator1);
+            assert.strictEqual(status[1][0].toString(), auditTokenMin);
+            assert.strictEqual(status[2][0].toString(), "1");
+            assert.strictEqual(status[3][0].toString(), validationInitTime.toString());
+        })
 
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
-    //         let event = result.logs[0];
+        it("Should succeed. determineConsensus properly determines consensus", async () => {
 
-    //         try {
-    //             await validationHelpers.replaceCancelValidation(replacementPrice, event.args.validationHash, validation.address, { from: validator1 });
+            let result = await validationHelpers.determineConsensus([1, 1, 1, 2]);
+            assert.strictEqual(result.toString(), "1");
+        })
+    })
 
-    //             expectRevert();
-    //         } catch (error) {
-    //             ensureException(error);
-    //         }
+    describe("Change price cancel request", async () => {
 
-    //     })
+        it("Should succeed. it should update price of requested validation", async () => {
 
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+            let event = result.logs[0];
 
-    //     it("Should succeed. it should remove validation from queue requested by proper requestor", async () => {
+            result = await validationHelpers.replaceCancelValidation(replacementPrice, event.args.validationHash, validation.address, queue.address, { from: dataSubscriber });
+            event = result.logs[0];
 
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
-    //         let event = result.logs[0];
+            assert.strictEqual(event.args.price.toString(), replacementPrice);
 
-    //         result = await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, { from: dataSubscriber });
-    //         event = result.logs[0];
+        })
 
-    //         assert.strictEqual(event.args.price.toString(), "0");
+        it("Should fail. it shouldn't update price of requested validation by different requestor", async () => {
 
-    //     })
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+            let event = result.logs[0];
 
-    //     it("Should fail. it shouldn't remove request from the queue requested by different requestor", async () => {
+            try {
+                await validationHelpers.replaceCancelValidation(replacementPrice, event.args.validationHash, validation.address, queue.address, { from: validator1 });
 
-    //         let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
-    //         let event = result.logs[0];
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
 
-    //         try {
-    //             await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, { from: validator1 });
+        })
 
-    //             expectRevert();
-    //         } catch (error) {
-    //             ensureException(error);
-    //         }
-    //     })
-    // })
+
+        it("Should succeed. it should remove validation from queue requested by proper requestor", async () => {
+
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+            let event = result.logs[0];
+
+            result = await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address,{ from: dataSubscriber });
+            event = result.logs[0];
+
+            assert.strictEqual(event.args.price.toString(), "0");
+
+        })
+
+        it("Should fail. it shouldn't remove request from the queue requested by different requestor", async () => {
+
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
+            let event = result.logs[0];
+
+            try {
+                await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address,{ from: validator1 });
+
+                expectRevert();
+            } catch (error) {
+                ensureException(error);
+            }
+        })
+    })
 })
