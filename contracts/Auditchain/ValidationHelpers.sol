@@ -263,7 +263,7 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
         if (!isCohort(validationContract))
             // validatorsList = nodeOP.returnNodeOperators();
-            validatorsList = IValidations(validationContract).validators(validationHash);
+            validatorsList = IValidations(validationContract).returnRegVal(validationHash);
         else    
             validatorsList = cohortFactory.returnValidatorList(enterprise, auditType);
 
@@ -313,12 +313,4 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
     }
 
-    function verifyInit(bool docSize, uint256 price, bool userType, address caller) public view returns (bool) {
-
-        require(docSize, "VNC:initVal - Doc hash value can't be 0");
-        require(memberHelpers.checkIfRequestorHasFunds(caller, price),"VNC:initVal - Deposit additional funds.");
-        require(userType,"VNC:initVal - Register as data subscriber");
-        return true;
-
-    }
 }
