@@ -185,6 +185,14 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
     }
 
 
+    function verifyInit(bool docSize, uint256 price, address caller) public view returns (bool) {
 
+        require(docSize, "VNC:initVal - Doc hash value can't be 0");
+        require(checkIfRequestorHasFunds(caller, price),"VNC:initVal - Deposit additional funds.");
+        require(members.userMap(caller, Members.UserType(2)) || 
+                members.userMap(caller, Members.UserType(0)),"VNC:initVal - Register as data subscriber");
+        return true;
+
+    }
 
 }
