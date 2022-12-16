@@ -10,6 +10,8 @@ interface IMemberHelpers {
     function decreaseValNo(address user)  external returns (bool);
     function outstandingValidations(address enterprise) external view returns (uint256);
     function checkIfRequestorHasFunds(address user, uint256 amount) external view returns (bool);
+    function verifyInit(bool docSize, uint256 price, address caller) external view returns (bool);
+
 
 
 }
