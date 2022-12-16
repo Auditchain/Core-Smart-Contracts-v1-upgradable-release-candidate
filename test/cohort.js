@@ -10,7 +10,7 @@ const COHORTFACTORY = artifacts.require('../CohortFactory');
 const MEMBER_HELPERS = artifacts.require('../MemberHelpers');
 const NODE_OPERATIONS = artifacts.require('../NodeOperations');
 const DEPOSIT_MODIFIERS = artifacts.require('../DepositModifiers');
-const VALIDATION = artifacts.require('../ValidationsCohort');
+const VALIDATION = artifacts.require('../ValCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers')
 const QUEUE = artifacts.require("../Queue");
 
@@ -63,22 +63,18 @@ contract("Cohort validation contract", (accounts) => {
     const tokenAmount5 = "14443332220000000000000000";
 
 
-    beforeEach(async () => {
+    before(async () => {
 
 
-
-
-
-        token = await TOKEN.new(admin);
-        members = await MEMBERS.new(platformAccount);
-        memberHelpers = await MEMBER_HELPERS.new(members.address, token.address);
-        cohortFactory = await COHORTFACTORY.new(members.address, memberHelpers.address);
-        nodeOperations = await NODE_OPERATIONS.new(memberHelpers.address, token.address, members.address);
-        depositModifiers = await DEPOSIT_MODIFIERS.new(members.address, token.address, memberHelpers.address, cohortFactory.address, nodeOperations.address)
-        validationHelpers = await VALIDATION_HELPERS.new(memberHelpers.address);
-        queue = await QUEUE.new();
-        validation = await VALIDATION.new(members.address, memberHelpers.address, cohortFactory.address, depositModifiers.address, nodeOperations.address, validationHelpers.address, queue.address)
-
+        token = await TOKEN.deployed();
+        members = await MEMBERS.deployed();
+        memberHelpers = await MEMBER_HELPERS.deployed();
+        nodeOperations = await NODE_OPERATIONS.deployed();
+        queue = await QUEUE.deployed();
+        validationHelpers = await VALIDATION_HELPERS.deployed();
+        validation = await VALIDATION.deployed();
+        cohortFactory = await COHORTFACTORY.deployed();
+        depositModifiers = await DEPOSIT_MODIFIERS.deployed();
 
 
         let CONTROLLER_ROLE = web3.utils.keccak256("CONTROLLER_ROLE");
@@ -151,17 +147,17 @@ contract("Cohort validation contract", (accounts) => {
     })
 
 
-    // describe("Deploy", async () => {
+    describe("Deploy", async () => {
 
-    //     it("Should succeed. validation deployed and initialized", async () => {
+        it("Should succeed. validation deployed and initialized", async () => {
 
-    //         let memberAddress = await validation.members();
-    //         let memberHelperAddress = await validation.memberHelpers();
-    //         assert.strictEqual(memberAddress, members.address);
-    //         assert.strictEqual(memberHelperAddress, memberHelpers.address);
+            let memberAddress = await validation.members();
+            let memberHelperAddress = await validation.mH();
+            assert.strictEqual(memberAddress, members.address);
+            assert.strictEqual(memberHelperAddress, memberHelpers.address);
 
-    //     })
-    // })
+        })
+    })
 
 
     // describe("Initialize validation", async () => {
@@ -212,219 +208,219 @@ contract("Cohort validation contract", (accounts) => {
     //     })
     // })
 
-    describe("Validate document", async () => {
+    // describe("Validate document", async () => {
 
-        let validationInitTime;
-        let documentHash;
+    //     let validationInitTime;
+    //     let documentHash;
 
-        beforeEach(async () => {
+    //     beforeEach(async () => {
 
-            documentHash = web3.utils.soliditySha3("2+2=4");
-            let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidationInitialized');
-            validationInitTime = event.args.initTime;
+    //         documentHash = web3.utils.soliditySha3("2+2=4");
+    //         let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
+    //         let event = result.logs[0];
+    //         assert.equal(event.event, 'ValidationInitialized');
+    //         validationInitTime = event.args.initTime;
 
-        })
+    //     })
 
-        it("Should succeed. Validation executed by proper validator and proper values are passed", async () => {
+    //     it("Should succeed. Validation executed by proper validator and proper values are passed", async () => {
 
-            let result = await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
-            let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, "", documentURL, documentHash, { from: validator1, gas: 900000 });
+    //         let result = await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, "", documentURL, documentHash, { from: validator1, gas: 900000 });
 
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidatorValidated');
-            assert.strictEqual(event.args.decision.toString(), "1");
-            assert.strictEqual(event.args.documentHash, documentHash);
+    //         let event = result.logs[0];
+    //         assert.equal(event.event, 'ValidatorValidated');
+    //         assert.strictEqual(event.args.decision.toString(), "1");
+    //         assert.strictEqual(event.args.documentHash, documentHash);
 
-        })
+    //     })
 
-        it("Should fail. Validation attested by proper validator but improper document hash is sent.", async () => {
+    //     it("Should fail. Validation attested by proper validator but improper document hash is sent.", async () => {
 
 
-            documentHash = web3.utils.soliditySha3("2+1=4");
-            try {
-                await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         documentHash = web3.utils.soliditySha3("2+1=4");
+    //         try {
+    //             await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
 
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
-        })
+    //             expectRevert();
+    //         } catch (error) {
+    //             ensureException(error);
+    //         }
+    //     })
 
-        it("Should fail. Validation attested by proper validator but improper validation time is sent.", async () => {
+    //     it("Should fail. Validation attested by proper validator but improper validation time is sent.", async () => {
 
-            try {
-                await validation.validate(documentHash, 123, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         try {
+    //             await validation.validate(documentHash, 123, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
 
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
-        })
+    //             expectRevert();
+    //         } catch (error) {
+    //             ensureException(error);
+    //         }
+    //     })
 
-        it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
+    //     it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
 
-            try {
-                await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: admin, gas: 900000 });
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
+    //         try {
+    //             await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: admin, gas: 900000 });
+    //             expectRevert();
+    //         } catch (error) {
+    //             ensureException(error);
+    //         }
 
-        })
+    //     })
 
-        it("Should succeed. Validation executed by all validators should result in sum of payments to each validation", async () => {
+    //     it("Should succeed. Validation executed by all validators should result in sum of payments to each validation", async () => {
 
 
 
-            // execute first validation for the sake of estabilishing number of validators
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator2, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator3, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
+    //         // execute first validation for the sake of estabilishing number of validators
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator2, gas: 900000 });
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator3, gas: 900000 });
+    //         await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
 
-            let depositAmountBefore1 = await memberHelpers.deposits(validator1);
-            let depositAmountBefore2 = await memberHelpers.deposits(validator2);
-            let depositAmountBefore3 = await memberHelpers.deposits(validator3);
+    //         let depositAmountBefore1 = await memberHelpers.deposits(validator1);
+    //         let depositAmountBefore2 = await memberHelpers.deposits(validator2);
+    //         let depositAmountBefore3 = await memberHelpers.deposits(validator3);
 
-            // create actual test
-            documentHash = web3.utils.soliditySha3("2+3=4");
-            let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidationInitialized');
-            validationInitTime = event.args.initTime;
+    //         // create actual test
+    //         documentHash = web3.utils.soliditySha3("2+3=4");
+    //         let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
+    //         let event = result.logs[0];
+    //         assert.equal(event.event, 'ValidationInitialized');
+    //         validationInitTime = event.args.initTime;
 
 
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator2, gas: 900000 });
-            result = await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator3, gas: 900000 });
-            // timeMachine.advanceTimeAndBlock(10);
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator2, gas: 900000 });
+    //         result = await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator3, gas: 900000 });
+    //         // timeMachine.advanceTimeAndBlock(10);
 
-            event = result.logs[1];
-            assert.equal(event.event, 'RequestExecuted');
+    //         event = result.logs[1];
+    //         assert.equal(event.event, 'RequestExecuted');
 
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator1 });
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator2 });
-            validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator3 });
+    //         validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator1 });
+    //         validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator2 });
+    //         validation.voteWinner(event.args.winners, [true, true, true], event.args.validationHash, { from: validator3 });
 
 
-            let depositAmountAfter1 = await memberHelpers.deposits(validator1);
-            let depositAmountAfter2 = await memberHelpers.deposits(validator2);
-            let depositAmountAfter3 = await memberHelpers.deposits(validator3);
+    //         let depositAmountAfter1 = await memberHelpers.deposits(validator1);
+    //         let depositAmountAfter2 = await memberHelpers.deposits(validator2);
+    //         let depositAmountAfter3 = await memberHelpers.deposits(validator3);
 
-            let earned1 = BN(depositAmountAfter1.toString()).minus(BN(depositAmountBefore1.toString()));
-            let earned2 = BN(depositAmountAfter2.toString()).minus(BN(depositAmountBefore2.toString()));
-            let earned3 = BN(depositAmountAfter3.toString()).minus(BN(depositAmountBefore3.toString()));
+    //         let earned1 = BN(depositAmountAfter1.toString()).minus(BN(depositAmountBefore1.toString()));
+    //         let earned2 = BN(depositAmountAfter2.toString()).minus(BN(depositAmountBefore2.toString()));
+    //         let earned3 = BN(depositAmountAfter3.toString()).minus(BN(depositAmountBefore3.toString()));
 
 
-            let mintedPerValidation = await members.amountTokensPerValidation();
-            let enterpriseMatch = await members.enterpriseMatch();
-            let platformFeePercantage = await members.platformShareValidation();
-            let enterprisePortion = mintedPerValidation * enterpriseMatch / 100;
-            let platformPortion = mintedPerValidation * platformFeePercantage / 100;
-            let validatorAmount = BN(mintedPerValidation.toString()).add(enterprisePortion.toString()).minus(platformPortion.toString());
-            let total = BN(earned1.toString()).add(earned2.toString()).add(earned3.toString());
+    //         let mintedPerValidation = await members.amountTokensPerValidation();
+    //         let enterpriseMatch = await members.enterpriseMatch();
+    //         let platformFeePercantage = await members.platformShareValidation();
+    //         let enterprisePortion = mintedPerValidation * enterpriseMatch / 100;
+    //         let platformPortion = mintedPerValidation * platformFeePercantage / 100;
+    //         let validatorAmount = BN(mintedPerValidation.toString()).add(enterprisePortion.toString()).minus(platformPortion.toString());
+    //         let total = BN(earned1.toString()).add(earned2.toString()).add(earned3.toString());
 
-            assert.strictEqual(total.toString(), validatorAmount.toString());
+    //         assert.strictEqual(total.toString(), validatorAmount.toString());
 
-        })
-    })
+    //     })
+    // })
 
-    describe("Check if validator has validated specific document", async () => {
+    // describe("Check if validator has validated specific document", async () => {
 
-        let validationInitTime;
-        let validationHash
+    //     let validationInitTime;
+    //     let validationHash
 
-        beforeEach(async () => {
+    //     beforeEach(async () => {
 
-            documentHash = web3.utils.soliditySha3("2+2=4");
-            let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidationInitialized');
-            validationInitTime = event.args.initTime;
-            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
+    //         documentHash = web3.utils.soliditySha3("2+2=4");
+    //         let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
+    //         let event = result.logs[0];
+    //         assert.equal(event.event, 'ValidationInitialized');
+    //         validationInitTime = event.args.initTime;
+    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
 
-        })
+    //     })
 
 
-        it("It should succeed. The return value should be true.", async () => {
+    //     it("It should succeed. The return value should be true.", async () => {
 
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
 
-            let isValidated = await validation.isValidated(validationHash, { from: validator1 });
+    //         let isValidated = await validation.isValidated(validationHash, { from: validator1 });
 
-            assert.strictEqual(isValidated.toString(), "1");
-        })
+    //         assert.strictEqual(isValidated.toString(), "1");
+    //     })
 
-        it("It should succeed. The return value should be false.", async () => {
-            let isValidated = await validation.isValidated(validationHash, { from: validator1 });
+    //     it("It should succeed. The return value should be false.", async () => {
+    //         let isValidated = await validation.isValidated(validationHash, { from: validator1 });
 
-            assert.strictEqual(isValidated.toString(), "0");
-        })
-    })
+    //         assert.strictEqual(isValidated.toString(), "0");
+    //     })
+    // })
 
 
 
-    describe("Calculate Vote Quorum", async () => {
+    // describe("Calculate Vote Quorum", async () => {
 
-        let validationInitTime;
-        let validationHash
+    //     let validationInitTime;
+    //     let validationHash
 
-        beforeEach(async () => {
+    //     beforeEach(async () => {
 
-            documentHash = web3.utils.soliditySha3("2+2=4");
-            let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
-            let event = result.logs[0];
-            assert.equal(event.event, 'ValidationInitialized');
-            validationInitTime = event.args.initTime;
-            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
+    //         documentHash = web3.utils.soliditySha3("2+2=4");
+    //         let result = await validation.initializeValidationCohort(documentHash, documentURL, 1, price, { from: enterprise1 });
+    //         let event = result.logs[0];
+    //         assert.equal(event.event, 'ValidationInitialized');
+    //         validationInitTime = event.args.initTime;
+    //         validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
 
-        })
+    //     })
 
-        it("Should succeed. Calculation is done against valid validation.", async () => {
+    //     it("Should succeed. Calculation is done against valid validation.", async () => {
 
-            await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
-            let quorum = await validationHelpers.calculateVoteQuorum(validationHash, validation.address);
-            assert.strictEqual(quorum.toString(), "33");
-        })
+    //         await validation.validate(documentHash, validationInitTime, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //         let quorum = await validationHelpers.calculateVoteQuorum(validationHash, validation.address);
+    //         assert.strictEqual(quorum.toString(), "33");
+    //     })
 
-        it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
+    //     it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
 
-            try {
-                await validation.validate(documentHash, 1, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
-                expectRevert();
-            } catch (error) {
-                ensureException(error);
-            }
-        })
-    })
+    //         try {
+    //             await validation.validate(documentHash, 1, enterprise1, 1, "", documentHash, { from: validator1, gas: 900000 });
+    //             expectRevert();
+    //         } catch (error) {
+    //             ensureException(error);
+    //         }
+    //     })
+    // })
 
-    describe("Collect Validation Results", async () => {
+    // describe("Collect Validation Results", async () => {
 
 
-        it("Should succeed. CollectValidationResults properly returns results", async () => {
+    //     it("Should succeed. CollectValidationResults properly returns results", async () => {
 
-            let val = await validation.validate(documentHash, validationInitTime, enterprise1, 2, "", documentHash, { from: validator1, gas: 900000 });
-            let event = val.logs[0];
-            assert.equal(event.event, 'ValidatorValidated');
-            let validationTime = event.args.validationTime;
+    //         let val = await validation.validate(documentHash, validationInitTime, enterprise1, 2, "", documentHash, { from: validator1, gas: 900000 });
+    //         let event = val.logs[0];
+    //         assert.equal(event.event, 'ValidatorValidated');
+    //         let validationTime = event.args.validationTime;
 
-            let status = await validation.collectValidationResults(validationHash);
+    //         let status = await validation.collectValidationResults(validationHash);
 
-            assert.strictEqual(status[0][0], validator1);
-            assert.strictEqual(status[1][0].toString(), auditTokenMin);
-            assert.strictEqual(status[2][0].toString(), "2");
-            assert.strictEqual(status[3][0].toString(), validationTime.toString());
-        })
+    //         assert.strictEqual(status[0][0], validator1);
+    //         assert.strictEqual(status[1][0].toString(), auditTokenMin);
+    //         assert.strictEqual(status[2][0].toString(), "2");
+    //         assert.strictEqual(status[3][0].toString(), validationTime.toString());
+    //     })
 
-        it("Should succeed. determineConsensus properly determines consensus", async () => {
+    //     it("Should succeed. determineConsensus properly determines consensus", async () => {
 
-            let result = await validationHelpers.determineConsensus([1, 1, 1, 2]);
-            assert.strictEqual(result.toString(), "1");
-        })
-    })
+    //         let result = await validationHelpers.determineConsensus([1, 1, 1, 2]);
+    //         assert.strictEqual(result.toString(), "1");
+    //     })
+    // })
 
 
 })
