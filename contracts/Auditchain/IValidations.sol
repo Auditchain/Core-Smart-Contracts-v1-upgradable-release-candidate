@@ -48,7 +48,7 @@ interface IValidations {
                 address winner);
 
     function cohort() external view returns (bool);
-    function validators(bytes32 valHash) external view returns (address[] memory);
+    function returnRegVal(bytes32 valHash) external view returns (address[] memory);
 
 
 }
