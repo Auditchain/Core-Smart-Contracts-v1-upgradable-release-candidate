@@ -66,7 +66,6 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
     event PaymentProcessed(bytes32 validationHash, address indexed winner, uint256 pointsPlus, uint256 pointsMinus, uint256 indexed amount);
     event WinnerVoted(address validator, address winner, bool isValid);
     event ValRegistered(address indexed validator, bytes32 valHash);
-    // event ReplaceCancelValidation(address indexed user, bytes32 validationHash, uint256 price);
 
 
     function initialize (
@@ -99,8 +98,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      * @param validationHash validation hash for request
      */
 
-        assert(validationHelpers.verifyInit(docHash.length > 0, price, members.userMap(msg.sender, IMembers.UserType(2)) || 
-                members.userMap(msg.sender, IMembers.UserType(0)), msg.sender)); 
+        assert(mH.verifyInit(docHash.length > 0, price, msg.sender)); 
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
@@ -279,13 +277,19 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         );
     }
 
-    function returnWinnerPoints(bytes32 validationHash, address user) external view returns (uint256 plus, uint256 minus){
+    function returnWinnerPoints(bytes32 valHash, address user) external view returns (uint256 plus, uint256 minus){
 
-        Validation storage validation = validations[validationHash];
+        Validation storage validation = validations[valHash];
         plus = validation.winnerVotesPlus[user];
         minus = validation.winnerVotesMinus[user];
     }
 
+    function returnRegVal(bytes32 valHash) public view returns (address[] memory) {
+
+        return regVal[valHash];
+
+
+    }
      
 }
  
