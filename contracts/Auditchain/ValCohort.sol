@@ -51,6 +51,8 @@ contract ValCohort is Validations {
                     reg[msg.sender] = prevVal;
                     regP[msg.sender] = prevVal;
                     done = true;
+                    regVal[valHash].push(msg.sender);
+
                 } else{
                     valHash = 0x0;
                     done = true;
