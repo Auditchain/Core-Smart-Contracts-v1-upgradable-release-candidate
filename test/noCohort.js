@@ -124,12 +124,10 @@ contract("NoCohort Validations contract", (accounts) => {
     describe("Initialize", async () => {
 
         it("Should succeed. noCohort deployed and initialized", async () => {
-
             let memberAddress = await validation.members();
             let memberHelperAddress = await validation.mH();
             assert.strictEqual(memberAddress, members.address);
             assert.strictEqual(memberHelperAddress, memberHelpers.address);
-
         })
     })
 
@@ -139,19 +137,14 @@ contract("NoCohort Validations contract", (accounts) => {
         it("Should succeed. Validation initialized by registered user who has sufficient funds", async () => {
 
             let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
-
             let event = result.logs[0];
             assert.equal(event.event, 'ValidationInitialized');
-
             let validationTime = event.args.initTime;
             let validationHash = web3.utils.soliditySha3(documentHash, validationTime, dataSubscriber);
 
             assert.strictEqual(event.args.validationHash, validationHash);
             assert.strictEqual(event.args.user, dataSubscriber);
-
             await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
-
-
         })
 
         it("Should fail. Validation initialized by not registered user.", async () => {
@@ -196,27 +189,19 @@ contract("NoCohort Validations contract", (accounts) => {
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
             valHash = event.args.validationHash;
-            // await validation.registerValidation({ from: validator1 });
             count++;
 
         })
 
         it("Should succeed. Validation executed by all validators should result in total award equal payment fee for one validation", async () => {
 
-
             let depositAmountBefore3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
             let depositAmountBefore2 = (await nodeOperations.nodeOpStruct(validator2)).POWAmount;
-            // let depositAmountBefore3 = (await nodeOperations.nodeOpStruct(validator3)).POWAmount;
-            // let depositAmountBefore4 = (await nodeOperations.nodeOpStruct(validator4)).POWAmount;
-
             let reg1 = await validation.registerValidation({ from: validator3 });
             let reg2 = await validation.registerValidation({ from: validator2 });
-            // await validation.registerValidation({ from: validator1 });
-
 
             await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator2, gas: 900000 });
             let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator3, gas: 900000 });
-            // await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
 
             let event = result.logs[1];
             assert.equal(event.event, 'RequestExecuted');
@@ -253,12 +238,9 @@ contract("NoCohort Validations contract", (accounts) => {
 
         it("Should succeed. Validation executed by proper validator and proper values are passed", async () => {
 
-
-            // await validation.registerValidation({ from: validator1 });
             let result = await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
             let event = result.logs[0];
             assert.equal(event.event, 'ValidatorValidated');
-
             assert.strictEqual(event.args.decision.toString(), "1");
             assert.strictEqual(event.args.documentHash, documentHash);
 
@@ -300,16 +282,12 @@ contract("NoCohort Validations contract", (accounts) => {
             } catch (error) {
                 ensureException(error);
             }
-
             await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
-
-
         })
 
         it("Should fail. Validation attested by improper validator while all params are correct.", async () => {
 
             let reg1 = await validation.registerValidation({ from: dataSubscriber });
-
 
             try {
                 await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: dataSubscriber, gas: 900000 });
@@ -317,13 +295,9 @@ contract("NoCohort Validations contract", (accounts) => {
             } catch (error) {
                 ensureException(error);
             }
-
             await queue.removeFromQueue(valHash, { from: admin }); //clean up queue
-
             //cancel registration
             await validation.registerValidation({ from: dataSubscriber });
-
-
         })
 
     })
@@ -334,12 +308,7 @@ contract("NoCohort Validations contract", (accounts) => {
         let validationInitTime;
         let validationHash;
 
-
-
         beforeEach(async () => {
-
-
-
             count++;
             documentHash = web3.utils.soliditySha3(documentURL + count);
             let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
@@ -348,14 +317,13 @@ contract("NoCohort Validations contract", (accounts) => {
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
             validationHash = event.args.validationHash;
-
         })
+
+
 
         it("It should succeed. The return value should be non zero hash", async () => {
 
             let result = await validation.registerValidation({ from: validator1 });
-
-
             let event = result.logs[0];
             assert.equal(event.event, 'ValRegistered');
 
@@ -393,9 +361,6 @@ contract("NoCohort Validations contract", (accounts) => {
 
         })
 
-
-
-
     })
 
     describe("Check if validator has validated specific document", async () => {
@@ -418,6 +383,10 @@ contract("NoCohort Validations contract", (accounts) => {
 
         })
 
+        afterEach(async () => {
+            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
+        })
+
 
         it("It should succeed. The return value should be true.", async () => {
 
@@ -425,17 +394,12 @@ contract("NoCohort Validations contract", (accounts) => {
 
             let isValidated = await validation.isValidated(validationHash, { from: validator1 });
             assert.strictEqual(isValidated[0].toString(), "1");
-            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
-
         })
 
         it("It should succeed. The return value should be false.", async () => {
 
             let isValidated = await validation.isValidated(validationHash, { from: validator1 });
-
             assert.strictEqual(isValidated[0].toString(), "0");
-            await queue.removeFromQueue(validationHash, { from: admin }); //clean up queue
-
         })
     })
 
@@ -446,60 +410,47 @@ contract("NoCohort Validations contract", (accounts) => {
         let count = 111111;
         let documentHash
 
-
-
         beforeEach(async () => {
 
             count++;
             documentHash = web3.utils.soliditySha3(documentURL + count);
-            let result = await validation.initVal(documentHash , documentURL, 1, price, { from: dataSubscriber });
+            let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
             let event = result.logs[0];
             assert.equal(event.event, 'ValidationInitialized');
             validationInitTime = event.args.initTime;
             validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, dataSubscriber);
-            console.log("val hash:", validationHash)
-
         })
 
 
         it("Should succeed. Calculation is done against valid validation.", async () => {
 
-            let queueSize = await queue.returnQueueSize();
-
-            console.log("queue size:", queueSize.toString());
-
-
             let reg = await validation.reg(validator1);
-            console.log("reg:", reg.toString());
-
             let txHash = await validation.registerValidation({ from: validator1 });
             await validation.registerValidation({ from: validator2 });
             await validation.registerValidation({ from: validator3 });
 
-            console.log("txHash:", txHash.logs[0].args);
             await validation.validate(documentHash, validationInitTime, dataSubscriber, 1, documentURL, documentHash, { from: validator1, gas: 900000 });
             let quorum = await validationHelpers.calculateVoteQuorum(txHash.logs[0].args.valHash, validation.address, dataSubscriber, 1);
 
-            console.log("quorum:", JSON.stringify(quorum));
             assert.strictEqual(quorum.toString(), "33");
         })
 
-            it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
+        it("Should fail. Calculation is done against valid validation with wrong time. ", async () => {
 
-                validationHash = web3.utils.soliditySha3(documentHash, 1, dataSubscriber);
-                let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
-                assert.strictEqual(result.toString(), "0");
+            validationHash = web3.utils.soliditySha3(documentHash, 1, dataSubscriber);
+            let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
+            assert.strictEqual(result.toString(), "0");
 
-            })
+        })
 
-            it("Should fail. Calculation is done against valid validation with wrong requestor. ", async () => {
+        it("Should fail. Calculation is done against valid validation with wrong requestor. ", async () => {
 
-                validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
-                let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
-                assert.strictEqual(result.toString(), "0");
+            validationHash = web3.utils.soliditySha3(documentHash, validationInitTime, enterprise1);
+            let result = await validationHelpers.calculateVoteQuorum(validationHash, validation.address, dataSubscriber, 1);
+            assert.strictEqual(result.toString(), "0");
 
-            })
+        })
     })
 
     describe("Collect Validation Results", async () => {
@@ -507,12 +458,12 @@ contract("NoCohort Validations contract", (accounts) => {
         let validationInitTime;
         let validationHash
 
-        let count=10;
+        let count = 10;
         let documentHash
 
         beforeEach(async () => {
 
-            count++;  
+            count++;
             documentHash = web3.utils.soliditySha3(documentURL + count); // prevent same hash
             let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
 
@@ -579,7 +530,7 @@ contract("NoCohort Validations contract", (accounts) => {
             let result = await validation.initVal(documentHash, documentURL, 1, price, { from: dataSubscriber });
             let event = result.logs[0];
 
-            result = await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address,{ from: dataSubscriber });
+            result = await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address, { from: dataSubscriber });
             event = result.logs[0];
 
             assert.strictEqual(event.args.price.toString(), "0");
@@ -592,7 +543,7 @@ contract("NoCohort Validations contract", (accounts) => {
             let event = result.logs[0];
 
             try {
-                await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address,{ from: validator1 });
+                await validationHelpers.replaceCancelValidation(0, event.args.validationHash, validation.address, queue.address, { from: validator1 });
 
                 expectRevert();
             } catch (error) {
