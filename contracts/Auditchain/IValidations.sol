@@ -36,7 +36,7 @@ interface IValidations {
         );
 
     function returnValidationRecord(bytes32 validationHash) external  view
-        returns( bool cohort,
+        returns(bool isCohort,
                 address requestor,
                 uint256 validationTime,
                 uint256 executionTime,
