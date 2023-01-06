@@ -75,14 +75,14 @@ contract ValidationHelpers is AccessControlUpgradeable {
         require(valAddresses[validationContract], "VH:returnWinnerStruct - val contract not registered");
 
         IValidations(validationContract).collectValidationResults(validationHash);
-        (address[] memory validator, ,uint8[] memory status, uint256[] memory validationTimes, string[] memory url,) =  IValidations(validationContract).collectValidationResults(validationHash);
+        (address[] memory validator, ,uint8[] memory _status, uint256[] memory validationTimes, string[] memory url,) =  IValidations(validationContract).collectValidationResults(validationHash);
 
         (,,,,,,,,winner,,) = IValidations(validationContract).validations(validationHash);
 
         for (uint8 i; i< validator.length; i++){
 
             if (validator[i] == winner)
-                return (url[i], winner, validationTimes[i], status[i]);
+                return (url[i], winner, validationTimes[i], _status[i]);
         }
         // valUrl = IValidations(validationContract).returnValidationUrl(validationHash, winner);
 
