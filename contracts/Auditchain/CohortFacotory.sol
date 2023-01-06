@@ -91,7 +91,7 @@ contract CohortFactory is  AccessControlEnumerableUpgradeable {
         require( !invited , "CF:inviteValidator - Validator has been already invited" );
         require( isEnterprise, "CF:inviteValidator - Only Enterprise user can invite.");
         require( isValidator, "CF:inviteValidator - Only Approved Validators can be invited.");
-        require( memberHelpers.deposits(validator) > 0,"CF:inviteValidator - Validator has not staked.");
+        require( memberHelpers.returnDepositAmount(validator) > 0,"CF:inviteValidator - Validator has not staked.");
         
         Invitation memory newInvitation;
         newInvitation.validator = validator;
