@@ -85,7 +85,9 @@ contract DepositModifiers is  AccessControlEnumerableUpgradeable, ReentrancyGuar
 
         uint256 accessFee = members.accessFee();
 
-        require(memberHelpers.returnDepositAmount(msg.sender) >= accessFee, "DM:dataSubscriberPayment - You don't have enough AUDT.");
+
+        //TOD: fix this function based on USDC
+        require( memberHelpers.returnDepositAmount(msg.sender) >= accessFee, "DM:dataSubscriberPayment - You don't have enough AUDT.");
         IERC20Upgradeable(auditToken).safeTransferFrom(msg.sender, address(this), accessFee);
         uint platformShare = (uint256(100)).sub(members.enterpriseShareSubscriber()).sub(members.validatorShareSubscriber());
         IERC20Upgradeable(auditToken).safeTransfer(members.platformAddress(), accessFee.mul(platformShare).div(100));
@@ -114,11 +116,12 @@ contract DepositModifiers is  AccessControlEnumerableUpgradeable, ReentrancyGuar
         uint256 totalDeposits;
 
         for (uint i=0; i < cohortValidators.length; i++){
-            totalDeposits = totalDeposits.add(memberHelpers.returnDepositAmount(cohortValidators[i]));
+            totalDeposits +=  memberHelpers.returnDepositAmount(cohortValidators[i]);
         }
 
         for (uint i=0; i < cohortValidators.length; i++){
-            uint256 oneValidatorPercentage = (memberHelpers.returnDepositAmount(cohortValidators[i]).mul(10e18)).div(totalDeposits);
+            uint256 currentAmount = memberHelpers.returnDepositAmount(cohortValidators[i]);
+            uint256 oneValidatorPercentage = (currentAmount.mul(10e18)).div(totalDeposits);
             uint256 oneValidatorAmount = (amount.mul(oneValidatorPercentage)).div(10e18);
             assert(memberHelpers.increaseDeposit(cohortValidators[i], oneValidatorAmount));
             emit LogDataSubscriberValidatorPaid(msg.sender, cohortValidators[i], oneValidatorAmount);
