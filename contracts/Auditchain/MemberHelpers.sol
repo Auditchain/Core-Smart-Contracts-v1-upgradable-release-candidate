@@ -6,6 +6,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeab
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "./../IAuditToken.sol";
 import "./IValidations.sol";
+import "./PriceConsumerV3.sol";
+
 
 /**
  * @title MemberHelpers
@@ -14,36 +16,52 @@ import "./IValidations.sol";
 contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpgradeable {
     using SafeERC20Upgradeable for IERC20Upgradeable;
 
-        bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
+    bytes32 public constant CONTROLLER_ROLE = keccak256("CONTROLLER_ROLE");
+    PriceConsumerV3 private _priceConsumerV3;   // Smart contract checking fof price of USD/ETH
+
 
     address public auditToken; //AUDT token
+    address public USDC;
+
     Members public members; // Members contract
     IValidations public validations; // Validation interface
-    mapping(address => uint256) public deposits; //track deposits per user
+    mapping(address => uint256) public depositsAUDT; //track deposits per user
+    mapping(address => uint256) public depositsUSDC; //track deposits per user
+
     uint256 public totalStaked;
     mapping(address => uint256) public outstandingValidations;
+
+    uint256 public AUDTDeposited;
+    uint256 public USDCDeposited;
 
     struct USER {
         address user;
         string name;
-        uint256 deposit;
+        uint256 depositAUDT;
+        uint256 depositUSDC;
+
     }
+
+    enum Coin {NONE, USDC, AUDT}
 
     
 
-    event LogDepositReceived(address indexed from, uint256 amount);
+    event LogDepositReceived(address indexed from, uint256 amount, Coin coin);
     event LogDepositRedeemed(address indexed from, uint256 amount);
     event LogIncreaseDeposit(address user, uint256 amount);
     event LogDecreaseDeposit(address user, uint256 amount);
     event LogIncreaseVal(address user, uint256 val);
     event LogDecreaseVal(address user, uint256 val);
+    event FundsForwarded(uint256 amount, Coin coin);
 
 
-    function initialize(address _members, address _auditToken) external {
+
+    function initialize(address _members, address _auditToken, address _USDC) external {
         require(_members != address(0),"MemberHelpers:constructor - Member address can't be 0");
         require(_auditToken != address(0), "MemberHelpers:setCohort - Token address can't be 0");
         members = Members(_members);
         auditToken = _auditToken;
+        USDC = _USDC;
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
@@ -65,20 +83,21 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         _;
     }
 
-    function returnDepositAmount(address user) public view returns (uint256) {
-        return deposits[user];
+    function returnDepositAmount(address user) public view returns (uint256 amount) {
+        uint256 audtAmount =  calculateUSDForAUDT(depositsAUDT[user]);
+        return (audtAmount + depositsUSDC[user]);
     }
 
    
 
     function increaseDeposit(address user, uint256 amount) external isController("increaseDeposit") returns(bool){
-        deposits[user] += amount;
+        depositsAUDT[user] += amount;
         emit LogIncreaseDeposit(user, amount);
         return true;
     }
 
     function decreaseDeposit(address user, uint256 amount) external isController("decreaseDeposit") returns (bool){
-        deposits[user] -= amount;
+        depositsAUDT[user] -= amount;
         emit LogDecreaseDeposit(user, amount);
         return true;
     }
@@ -96,28 +115,84 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         return true;
     }
 
-    /**
-     * @dev Function to accept contribution to staking
-     * @param amount number of AUDT tokens sent to contract for staking
-     */
-    function stake(uint256 amount) external nonReentrant {
-        require(amount > 0, "MH:stake - Amount can't be 0");
 
-        if (members.userMap(msg.sender, Members.UserType(1))) {
-            require(amount + deposits[msg.sender] >= members.minContribution(), "MH:stake - Minimum contribution amount is 5000 AUDT");
-           
+
+    /**
+     * @dev find out ETH/USD price
+     * @param amount - amount of ether to be checked against USD
+     * @return amount of stable coin
+     */
+    function calculateUSDForAUDT(uint256 amount) public view returns (uint256) {
+
+       int256 price = _priceConsumerV3.getLatestPrice();
+       return (amount * uint256(price)) / 1e8;
+    }
+
+    /**
+     * @dev Function to accept contribution for staking
+     * @param amount number of AUDT or USDC tokens sent to contract for staking
+     */
+    function stake(uint256 amount, Coin coin) external nonReentrant {
+
+        uint256 valueInSC;
+
+
+         _preValidateDeposit(amount, coin);
+
+        if (coin == Coin.AUDT) {
+            valueInSC =  calculateUSDForAUDT(amount);
+            AUDTDeposited +=  amount;
+            depositsAUDT[msg.sender] += amount; 
+        } else if (coin == Coin.USDC) {
+            valueInSC = amount;
+            USDCDeposited += amount;
+            depositsUSDC[msg.sender] += amount; 
         }
+
+        _forwardFunds(amount, coin);
+
+        emit LogDepositReceived(msg.sender, amount, coin);
+    }
+
+
+     /**
+     * @dev Forward funds to wallet. 
+     * @param amount - amount of stable coin to be transferred to this contract
+     * @param coin - type of coin contributed
+     */
+    function _forwardFunds(uint256 amount, Coin coin) internal {
+
+        if (coin == Coin.AUDT)
+            IERC20Upgradeable(auditToken).safeTransferFrom(msg.sender, address(this), amount);
+        else if (coin == Coin.USDC)
+            IERC20Upgradeable(USDC).safeTransferFrom(msg.sender, address(this), amount);
+
+        emit FundsForwarded(amount, coin);
+
+    }
+
+
+    /**
+     * @dev Validation of an incoming deposit.
+     * @param amount Amount to deposit
+     * @param coin coin deposited
+     */
+    function _preValidateDeposit(uint256 amount, Coin coin) internal view {
+        require(msg.sender != address(0), "MH:_preValidatePurchase  sender is the zero address");
+        require(amount != 0, "NH:_preValidatePurchase amount can't be  0");
         require(members.userMap(msg.sender, Members.UserType(0)) ||
                 members.userMap(msg.sender, Members.UserType(1)) ||
                 members.userMap(msg.sender, Members.UserType(2)),
-                                            "MH:stake - User is not validator or enterprise.");
+                                            "MH:_preValidatePurchase - User is not validator or enterprise.");
+        require(coin == Coin.USDC || coin == Coin.AUDT, "MH:_preValidatePurchase - Invalid coin");
 
-        IERC20Upgradeable(auditToken).safeTransferFrom(msg.sender, address(this), amount);
-        deposits[msg.sender] += amount;
-        totalStaked += amount;
-        emit LogDepositReceived(msg.sender, amount);
+        //TOD: deal with two coins
+        if (members.userMap(msg.sender, Members.UserType(1))) 
+            require(amount + returnDepositAmount(msg.sender)  >= members.minContribution(), "MH:stake - You are below minimum contribution.");
+
+           
+        
     }
-
 
     /**
      * @dev Function to redeem contribution.
@@ -128,10 +203,10 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
             require(outstandingValidations[msg.sender] == 0, "MH:redeem - still processing outstanding validations");
         }
 
-        deposits[msg.sender] -= amount;
-        totalStaked -= amount;
-        IERC20Upgradeable(auditToken).safeTransfer(msg.sender, amount);
-        emit LogDepositRedeemed(msg.sender, amount);
+        // deposits[msg.sender] -= amount;
+        // totalStaked -= amount;
+        // IERC20Upgradeable(auditToken).safeTransfer(msg.sender, amount);
+        // emit LogDepositRedeemed(msg.sender, amount);
     }
     
 
@@ -159,6 +234,8 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
             return (returnDepositAmount(requestor) > price );
 
         return (returnDepositAmount(requestor) > price * (outstandingValidations[requestor] ));
+
+        
     }
 
 
@@ -178,7 +255,8 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
         for (uint256 i; i< user.length; i++ ){
             newUser[i].user = user[i];
             newUser[i].name = name[i];
-            newUser[i].deposit = deposits[user[i]];
+            newUser[i].depositAUDT = depositsAUDT[user[i]];
+            newUser[i].depositUSDC = depositsUSDC[user[i]];
         }
 
         return newUser;
