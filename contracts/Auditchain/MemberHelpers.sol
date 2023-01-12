@@ -48,8 +48,8 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
 
     event LogDepositReceived(address indexed from, uint256 amount, Coin coin);
     event LogDepositRedeemed(address indexed from, uint256 amount);
-    event LogIncreaseDeposit(address user, uint256 amount);
-    event LogDecreaseDeposit(address user, uint256 amount);
+    event LogIncreaseDeposit(address user, uint256 amount, uint256 audtAmount);
+    event LogDecreaseDeposit(address user, uint256 amount, uint256 audtAmount);
     event LogIncreaseVal(address user, uint256 val);
     event LogDecreaseVal(address user, uint256 val);
     event FundsForwarded(uint256 amount, Coin coin);
@@ -91,14 +91,30 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
    
 
     function increaseDeposit(address user, uint256 amount) external isController("increaseDeposit") returns(bool){
-        depositsAUDT[user] += amount;
-        emit LogIncreaseDeposit(user, amount);
+
+        uint256 audtAmount = calculateAUDTForUSD(amount);
+        depositsAUDT[user] += audtAmount;
+        emit LogIncreaseDeposit(user, amount, audtAmount);
         return true;
     }
 
     function decreaseDeposit(address user, uint256 amount) external isController("decreaseDeposit") returns (bool){
-        depositsAUDT[user] -= amount;
-        emit LogDecreaseDeposit(user, amount);
+
+        uint256 audtAmount = calculateAUDTForUSD(amount);
+
+        if  (depositsUSDC[user] >= amount)
+            depositsUSDC[user] -= amount;
+
+        else if(depositsUSDC[user] > 0 &&  depositsUSDC[user] < amount){
+            depositsUSDC[user] = 0;
+            audtAmount = calculateAUDTForUSD(amount - depositsUSDC[user] );
+            depositsAUDT[user] -= audtAmount;
+
+        }else
+            depositsAUDT[user] -= audtAmount;
+        
+        IAuditToken(auditToken).mint(address(validations), audtAmount );
+        emit LogDecreaseDeposit(user, amount, audtAmount);
         return true;
     }
 
@@ -119,13 +135,20 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
 
     /**
      * @dev find out ETH/USD price
-     * @param amount - amount of ether to be checked against USD
+     * @param amount - amount of crypto to be checked against USD
      * @return amount of stable coin
      */
     function calculateUSDForAUDT(uint256 amount) public view returns (uint256) {
 
        int256 price = _priceConsumerV3.getLatestPrice();
-       return (amount * uint256(price)) / 1e8;
+       return (amount / uint256(price));
+    }
+
+
+    function calculateAUDTForUSD(uint256 amount) public view returns (uint256) {
+
+       int256 price = _priceConsumerV3.getLatestPrice();
+       return (amount / uint256(price)) / 1e8;  
     }
 
     /**
