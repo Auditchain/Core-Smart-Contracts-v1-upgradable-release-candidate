@@ -6,7 +6,7 @@ const MEMBERS = artifacts.require('../Members');
 const TOKEN = artifacts.require('../AuditToken');
 const MEMBER_HELPERS = artifacts.require('../MemberHelpers');
 const NODE_OPERATIONS = artifacts.require('../NodeOperations');
-const VALIDATION = artifacts.require('../ValidationsNoCohort');
+const VALIDATION = artifacts.require('../ValNoCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
@@ -191,7 +191,7 @@ contract("Queue", (accounts) => {
             let nextValidation = await queue.getNextValidation();
             assert.strictEqual(nextValidation[0], trxHash);
             nextValidation = await queue.getValidationToProcess(trxHash);
-            assert.strictEqual(nextValidation, trxHash2);
+            assert.strictEqual(nextValidation[0], trxHash2);
             await queue.removeFromQueue(trxHash);
             await queue.removeFromQueue(trxHash2);
 
@@ -201,10 +201,10 @@ contract("Queue", (accounts) => {
 
             await queue.addToQueue(auditTokenPrice, trxHash, documentHash, documentURL, admin, 1);
             let nextValidation = await queue.getNextValidation();
+
             assert.strictEqual(nextValidation[0], trxHash);
             nextValidation = await queue.getValidationToProcess(trxHash);
-
-            assert.strictEqual(nextValidation, zeroTransaction);
+            assert.strictEqual(nextValidation[0], zeroTransaction);
             await queue.removeFromQueue(trxHash);
         })
 
