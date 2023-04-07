@@ -8,7 +8,7 @@ const TOKEN = artifacts.require('../AuditToken');
 const MEMBER_HELPERS = artifacts.require('../MemberHelpers');
 const NODE_OPERATIONS = artifacts.require('../NodeOperations');
 
-const VALIDATION = artifacts.require('../ValidationsNoCohort');
+const VALIDATION = artifacts.require('../ValNoCohort');
 const VALIDATION_HELPERS = artifacts.require('../ValidationHelpers');
 const QUEUE = artifacts.require("../Queue");
 
