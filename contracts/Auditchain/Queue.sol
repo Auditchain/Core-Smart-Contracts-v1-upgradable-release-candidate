@@ -132,9 +132,9 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object as the new Head with `_price` in the data field.
      */
-    function addHead(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType) internal virtual{
+    function addHead(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint8 auditType) internal virtual{
 
-        uint256 objectId = _createObject(_price, _validationHash, _documentHash, _url, _user, _initTime, auditType);
+        uint256 objectId = _createObject(_price, _validationHash, _documentHash, _url, _user, auditType);
         _link(objectId, head);
         _setHead(objectId);
     }
@@ -142,15 +142,15 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object as the new Tail with `_price` in the data field.
      */
-    function addTail(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType) internal virtual{
+    function addTail(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint8 auditType) internal virtual{
 
 
         if (head == 0) {
-            addHead(_price, _validationHash, _documentHash, _url, _user, _initTime, auditType);
+            addHead(_price, _validationHash, _documentHash, _url, _user, auditType);
         }
         else {
             uint256 oldTailId = findTailId();
-            uint256 newTailId = _createObject(_price, _validationHash, _documentHash, _url, _user, _initTime, auditType);
+            uint256 newTailId = _createObject(_price, _validationHash, _documentHash, _url, _user, auditType);
             _link(oldTailId, newTailId);
         }
     }
@@ -177,11 +177,11 @@ contract Queue is AccessControlEnumerableUpgradeable{
      * @dev Insert a new Object after the Object denoted by `_id` with `_price` in the data field.
      */
 
-    function insertAfter(uint256 _prevId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType) internal virtual {
+    function insertAfter(uint256 _prevId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user,  uint8 auditType) internal virtual {
 
 
         Object memory prevObject = objects[_prevId];
-        uint256 newObjectId = _createObject(_price, _validationHash, _documentHash,  _url, _user, _initTime, auditType);
+        uint256 newObjectId = _createObject(_price, _validationHash, _documentHash,  _url, _user, auditType);
         _link(newObjectId, prevObject.next);
         _link(prevObject.id, newObjectId);
     }
@@ -189,15 +189,15 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Insert a new Object before the Object denoted by `_id` with `_price` in the data field.
      */
-    function insertBefore(uint256 _nextId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType) internal virtual {
+    function insertBefore(uint256 _nextId, uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user,  uint8 auditType) internal virtual {
 
 
         if (_nextId == head) {
-            addHead(_price, _validationHash, _documentHash,  _url, _user, _initTime, auditType);
+            addHead(_price, _validationHash, _documentHash,  _url, _user, auditType);
         }
         else {
             uint256 prevId = findPrevId(_nextId);
-            insertAfter(prevId, _price, _validationHash, _documentHash,  _url, _user, _initTime, auditType);
+            insertAfter(prevId, _price, _validationHash, _documentHash,  _url, _user, auditType);
         }
     }
 
@@ -213,12 +213,12 @@ contract Queue is AccessControlEnumerableUpgradeable{
     /**
      * @dev Internal function to create an unlinked Object.
      */
-    function _createObject(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType) internal returns (uint256){
+    function _createObject(uint256 _price, bytes32 _validationHash, bytes32 _documentHash, string memory _url, address _user, uint8 auditType) internal returns (uint256){
 
         uint256 newId = idCounter;
         idCounter += 1;
         
-        Object memory object = Object(newId, 0, _price, _validationHash, _documentHash,  _url, _user, _initTime, false, auditType);
+        Object memory object = Object(newId, 0, _price, _validationHash, _documentHash,  _url, _user, block.timestamp, false, auditType);
         objects[object.id] = object;
         emit ObjectCreated(
             object.id,
@@ -242,10 +242,10 @@ contract Queue is AccessControlEnumerableUpgradeable{
     }
 
 
-    function addToQueue(uint256 _price, bytes32 _validationHash,  bytes32 _documentHash, string memory _url, address _user, uint256 _initTime, uint8 auditType ) public isController() returns(bool){
+    function addToQueue(uint256 _price, bytes32 _validationHash,  bytes32 _documentHash, string memory _url, address _user, uint8 auditType ) public isController() returns(bool){
         
        uint256 id = findIdForLesserPrice(_price);
-       insertBefore(id, _price, _validationHash, _documentHash, _url, _user, _initTime, auditType);
+       insertBefore(id, _price, _validationHash, _documentHash, _url, _user, auditType);
        queueCount++;
        return true;
 
@@ -338,9 +338,9 @@ contract Queue is AccessControlEnumerableUpgradeable{
     function replaceValidation(uint256 newPrice, bytes32 _valHash) external isController() returns (bool){
 
         uint256 id = findIdForValidationHash(_valHash);
-        (,,,,bytes32 documentHash, string memory url, address user, uint256 initTime,, uint8 auditType) = get(id);
+        (,,,,bytes32 documentHash, string memory url, address user,,, uint8 auditType) = get(id);
         removeFromQueue(_valHash);
-        addToQueue(newPrice, _valHash, documentHash, url, user, initTime, auditType); 
+        addToQueue(newPrice, _valHash, documentHash, url, user, auditType); 
 
         return true;
     }
