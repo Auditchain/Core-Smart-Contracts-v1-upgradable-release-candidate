@@ -110,7 +110,7 @@ contract("Member Helper contract", (accounts) => {
 
         it("Should succeed. Validator stakes tokens.", async () => {
 
-            let result = await memberHelpers.stake(auditTokenMin, { from: validator1 });
+            let result = await memberHelpers.stake(auditTokenMin, validator1, { from: validator1 });
             assert.lengthOf(result.logs, 1);
 
             let event = result.logs[0];
@@ -121,7 +121,7 @@ contract("Member Helper contract", (accounts) => {
 
         it("Should fail. User hasn't been registered as validator.", async () => {
             try {
-                await memberHelpers.stake(auditTokenMin, { from: validator2 });
+                await memberHelpers.stake(auditTokenMin, validator2, { from: validator2 });
                 expectRevert()
             } catch (error) {
                 ensureException(error);
@@ -131,7 +131,7 @@ contract("Member Helper contract", (accounts) => {
         it("Should fail. User contributed less than required amount.", async () => {
 
             try {
-                await memberHelpers.stake(auditTokenLesMin, { from: validator1 });
+                await memberHelpers.stake(auditTokenLesMin, validator1, { from: validator1 });
                 expectRevert()
             } catch (error) {
                 ensureException(error);
@@ -151,7 +151,7 @@ contract("Member Helper contract", (accounts) => {
 
         it("Should succeed. Enterprise deposits tokens.", async () => {
 
-            let result = await memberHelpers.stake(auditTokenMin, { from: enterprise1 });
+            let result = await memberHelpers.stake(auditTokenMin, enterprise1, { from: enterprise1 });
             assert.lengthOf(result.logs, 1);
 
             let event = result.logs[0];
@@ -162,7 +162,7 @@ contract("Member Helper contract", (accounts) => {
 
         it("Should fail. User hasn't been registered as enterprise.", async () => {
             try {
-                result = await memberHelpers.stake(auditTokenMin, { from: admin });
+                result = await memberHelpers.stake(auditTokenMin, admin, { from: admin });
                 expectRevert()
             } catch (error) {
                 ensureException(error);
