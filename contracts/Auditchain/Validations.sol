@@ -111,7 +111,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         newValidation.auditTypes = AuditTypes(auditTypes);
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, block.timestamp, auditTypes));
+        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, auditTypes));
 
         emit ValidationInitialized(msg.sender, valHash, block.timestamp, docHash, url, AuditTypes(auditTypes));
     }
