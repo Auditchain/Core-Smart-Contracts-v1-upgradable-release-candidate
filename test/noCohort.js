@@ -77,6 +77,8 @@ contract("NoCohort Validations contract", (accounts) => {
         await members.addUser(validator4, "Validators 4", 1, { from: admin });
         await members.addUser(validator5, "Validators 5", 1, { from: admin });
 
+        
+
 
         await members.addUser(dataSubscriber, "DataSubscriber 1", 2, { from: admin });
 
@@ -96,13 +98,13 @@ contract("NoCohort Validations contract", (accounts) => {
 
         await token.approve(memberHelpers.address, auditTokenMin, { from: dataSubscriber });
 
-        await memberHelpers.stake(auditTokenMin, { from: validator1 });
-        await memberHelpers.stake(auditTokenMin, { from: validator2 });
-        await memberHelpers.stake(auditTokenMin, { from: validator3 });
-        await memberHelpers.stake(auditTokenMin, { from: validator4 });
-        await memberHelpers.stake(auditTokenMin, { from: validator5 });
+        await memberHelpers.stake(auditTokenMin, validator1, { from: validator1 });
+        await memberHelpers.stake(auditTokenMin, validator2, { from: validator2 });
+        await memberHelpers.stake(auditTokenMin, validator3, { from: validator3 });
+        await memberHelpers.stake(auditTokenMin, validator4, { from: validator4 });
+        await memberHelpers.stake(auditTokenMin, validator5, { from: validator5 });
 
-        await memberHelpers.stake(auditTokenMin, { from: dataSubscriber });
+        await memberHelpers.stake(auditTokenMin, dataSubscriber, { from: dataSubscriber });
 
         await nodeOperations.toggleNodeOperator({ from: validator1 });
         await nodeOperations.toggleNodeOperator({ from: validator2 });
