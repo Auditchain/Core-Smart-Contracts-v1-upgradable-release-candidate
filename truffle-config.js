@@ -38,12 +38,13 @@ module.exports = {
       host: "localhost",
       port: 8545,
       // gas: 6721975,
-      gas: 20000000,
-      gasPrice: 1000000000,
+      gas: 10000000,
+      gasPrice: 0x842BA87EB,
       network_id: "*", // Match any network id
       accounts: 10,
       defaultEtherBalance: 1000,
-      blockTime: 3
+      blockTime: 3,
+      skipDryRun: true,
     },
 
     ropsten: {
