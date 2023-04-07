@@ -100,22 +100,22 @@ contract MemberHelpers is AccessControlEnumerableUpgradeable, ReentrancyGuardUpg
      * @dev Function to accept contribution to staking
      * @param amount number of AUDT tokens sent to contract for staking
      */
-    function stake(uint256 amount) external nonReentrant {
+    function stake(uint256 amount, address user) external nonReentrant {
         require(amount > 0, "MH:stake - Amount can't be 0");
 
-        if (members.userMap(msg.sender, Members.UserType(1))) {
-            require(amount + deposits[msg.sender] >= members.minContribution(), "MH:stake - Minimum contribution amount is 5000 AUDT");
+        if (members.userMap(user, Members.UserType(1))) {
+            require(amount + deposits[user] >= members.minContribution(), "MH:stake - Minimum contribution amount is 5000 AUDT");
            
         }
-        require(members.userMap(msg.sender, Members.UserType(0)) ||
-                members.userMap(msg.sender, Members.UserType(1)) ||
-                members.userMap(msg.sender, Members.UserType(2)),
+        require(members.userMap(user, Members.UserType(0)) ||
+                members.userMap(user, Members.UserType(1)) ||
+                members.userMap(user, Members.UserType(2)),
                                             "MH:stake - User is not validator or enterprise.");
 
-        IERC20Upgradeable(auditToken).safeTransferFrom(msg.sender, address(this), amount);
-        deposits[msg.sender] += amount;
+        IERC20Upgradeable(auditToken).safeTransferFrom(user, address(this), amount);
+        deposits[user] += amount;
         totalStaked += amount;
-        emit LogDepositReceived(msg.sender, amount);
+        emit LogDepositReceived(user, amount);
     }
 
 
