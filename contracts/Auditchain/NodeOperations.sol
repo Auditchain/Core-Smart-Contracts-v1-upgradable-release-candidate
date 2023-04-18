@@ -377,11 +377,11 @@ contract NodeOperations is AccessControl {
         if (payment > 0)
             if (deliver) {
                 emit LogStakingRewardsTransferredOut(msg.sender, payment);
-                assert(IAuditToken(auditToken).mint(msg.sender, payment));
+                require(IAuditToken(auditToken).mint(msg.sender, payment));
             } else {
                 emit LogStakingRewardsClaimed(msg.sender, payment);
-                assert(memberHelpers.increaseDeposit(msg.sender, payment));
-                assert(IAuditToken(auditToken).mint(address(this), payment));
+                require(memberHelpers.increaseDeposit(msg.sender, payment));
+                require(IAuditToken(auditToken).mint(address(this), payment));
             }
     }
 }

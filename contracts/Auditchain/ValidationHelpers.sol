@@ -105,9 +105,9 @@ contract ValidationHelpers is AccessControlUpgradeable {
 
         require(msg.sender == requestor , "VH:replaceCancelValidation - not yours");
         if (price == 0)
-            assert(IQueue(queueContract).removeFromQueue(validationHash));
+            require(IQueue(queueContract).removeFromQueue(validationHash));
         else
-            assert(IQueue(queueContract).replaceValidation(price, validationHash));
+            require(IQueue(queueContract).replaceValidation(price, validationHash));
             
         emit ReplaceCancelValidation(msg.sender, validationHash, price);
     }

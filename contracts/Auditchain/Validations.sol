@@ -98,11 +98,11 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
      * @param validationHash validation hash for request
      */
 
-        assert(mH.verifyInit(docHash.length > 0, price, msg.sender)); 
+        require(mH.verifyInit(docHash.length > 0, price, msg.sender)); 
 
         bytes32 valHash = keccak256(abi.encodePacked(docHash, block.timestamp, msg.sender));
 
-        assert(mH.increaseValNo(msg.sender));
+        require(mH.increaseValNo(msg.sender));
         Validation storage newValidation = validations[valHash];
 
         newValidation.url = url;
@@ -111,7 +111,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         newValidation.auditTypes = AuditTypes(auditTypes);
         newValidation.price = price;
 
-        assert(queue.addToQueue(price, valHash, docHash, url, msg.sender, auditTypes));
+        require(queue.addToQueue(price, valHash, docHash, url, msg.sender, auditTypes));
 
         emit ValidationInitialized(msg.sender, valHash, block.timestamp, docHash, url, AuditTypes(auditTypes));
     }
@@ -170,10 +170,10 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         uint256 platformFee = (v.price * members.platformShare()) / 100;
         uint256 winnerFee = v.price - platformFee;
 
-        assert(mH.decreaseDeposit(v.requestor, v.price));
-        assert(nodeOperations.increasePOWRewards(winner, winnerFee));
-        assert(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
-        assert(mH.decreaseValNo(v.requestor));
+        require(mH.decreaseDeposit(v.requestor, v.price));
+        require(nodeOperations.increasePOWRewards(winner, winnerFee));
+        require(nodeOperations.increasePOWRewards(members.platformAddress(), platformFee));
+        require(mH.decreaseValNo(v.requestor));
         emit PaymentProcessed(validationHash, winner, v.winnerVotesPlus[winner], v.winnerVotesMinus[winner], winnerFee);
     }
 
@@ -189,7 +189,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         uint256 consensus = validationHelpers.returnConsensus(validationHash, address(this));
         validation.executionTime = block.timestamp;
         validation.consensus = consensus;
-        assert(queue.setValidatedFlag(validationHash));
+        require(queue.setValidatedFlag(validationHash));
         
         emit RequestExecuted(validation.requestor, validationHash, documentHash, consensus,  block.timestamp, validation.url, validation.auditTypes);
     }
@@ -211,7 +211,7 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         bytes32 valHash = keccak256(abi.encodePacked(docHash, valTime, subscriber));
 
         Validation storage validation = validations[valHash];
-        assert(validationHelpers.verifyValidate(validation.validationTime == valTime, 
+        require(validationHelpers.verifyValidate(validation.validationTime == valTime, 
                                         validation.validatorChoice[msg.sender] == ValidationStatus.Undefined,
                                         members.userMap(msg.sender, IMembers.UserType(1)), msg.sender));
 
@@ -223,8 +223,8 @@ abstract contract Validations  is ReentrancyGuardUpgradeable {
         validation.validationsCompleted++;
         reg[msg.sender] = 0;
 
-        assert(nodeOperations.increaseStakeRewards(msg.sender));
-        assert(nodeOperations.increaseDSRewards(msg.sender));
+        require(nodeOperations.increaseStakeRewards(msg.sender));
+        require(nodeOperations.increaseDSRewards(msg.sender));
         emit ValidatorValidated(msg.sender, docHash, block.timestamp, decision, valUrl, valHash);
         executeValidation(valHash, docHash);
     }

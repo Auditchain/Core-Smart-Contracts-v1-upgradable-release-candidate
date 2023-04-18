@@ -95,7 +95,7 @@ contract ValCohort is Validations {
             address winner = validationHelpers.selectWinner(_validationHash, _winners);
             validation.winner = winner;
             processPayments(_validationHash, winner);
-            assert(queue.removeFromQueue(_validationHash));
+            require(queue.removeFromQueue(_validationHash));
         }
     }
 

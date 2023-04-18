@@ -91,11 +91,11 @@ contract DepositModifiers is  AccessControlEnumerableUpgradeable, ReentrancyGuar
         IERC20Upgradeable(auditToken).safeTransfer(members.platformAddress(), accessFee.mul(platformShare).div(100));
 
         if (members.userMap(msg.sender, Members.UserType(2)) || members.userMap(msg.sender, Members.UserType(0))){
-            assert(memberHelpers.decreaseDeposit(msg.sender, accessFee));
+            require(memberHelpers.decreaseDeposit(msg.sender, accessFee));
         }
 
         uint256 enterpriseShare = accessFee.mul(members.enterpriseShareSubscriber()).div(100);
-        assert(memberHelpers.increaseDeposit(enterpriseAddress, enterpriseShare));
+        require(memberHelpers.increaseDeposit(enterpriseAddress, enterpriseShare));
 
         allocateValidatorDataSubscriberFee(enterpriseAddress, audits, accessFee.mul(members.validatorShareSubscriber()).div(100));
 
@@ -120,7 +120,7 @@ contract DepositModifiers is  AccessControlEnumerableUpgradeable, ReentrancyGuar
         for (uint i=0; i < cohortValidators.length; i++){
             uint256 oneValidatorPercentage = (memberHelpers.returnDepositAmount(cohortValidators[i]).mul(10e18)).div(totalDeposits);
             uint256 oneValidatorAmount = (amount.mul(oneValidatorPercentage)).div(10e18);
-            assert(memberHelpers.increaseDeposit(cohortValidators[i], oneValidatorAmount));
+            require(memberHelpers.increaseDeposit(cohortValidators[i], oneValidatorAmount));
             emit LogDataSubscriberValidatorPaid(msg.sender, cohortValidators[i], oneValidatorAmount);
         }
     }
